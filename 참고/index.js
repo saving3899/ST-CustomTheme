@@ -48,9 +48,7 @@ const defaultSettings = {
     hiddenExtensionItems: [], // List of hidden extension menu items (by text)
     spellcheckEnabled: false, // Spellcheck for #send_textarea (Default: Enabled, Toggle: Disable)
     alwaysShowExtraButtons: false, // 9-1. Extract Message Action Buttons
-    showDeleteButton: false, // Message Delete Button
-    chatNavEnabled: true, // 10. Chat Navigation Buttons
-    chatNavPosition: 'bottom-right' // 'bottom-right', 'top-right', 'bottom-left', 'top-left', 'bottom-center', 'top-center'
+    showDeleteButton: false // Message Delete Button
 };
 
 // 설정 객체 참조 (초기화 후 SillyTavern.getContext().extensionSettings에서 가져옴)
@@ -240,9 +238,6 @@ jQuery(async () => {
     // 1. Initialize Settings
     initSettings();
     // Cache for localStorage fallback REMOVED
-
-    // Add Chat Navigation Buttons
-    addChatNavButtons();
 
     // Load persona-export.js module dynamically
     // Get current script's directory path for relative loading
@@ -1541,7 +1536,7 @@ jQuery(async () => {
                             <div class="st-theme-color-picker">
                                 <input type="color" id="st-theme-color" value="${stCustomThemeSettings.hoverColor}">
                                 <input type="text" id="st-theme-color-hex" value="${stCustomThemeSettings.hoverColor}"
-                                    placeholder="#9aa894" maxlength="7" class="st-theme-hex-input">
+                                    placeholder="#8b5cf6" maxlength="7" class="st-theme-hex-input">
                                 <button id="st-theme-color-apply" class="st-theme-btn-small">적용</button>
                             </div>
                         </div>
@@ -1757,30 +1752,6 @@ jQuery(async () => {
                                 placeholder="메시지를 입력하세요...">
                         </div>
                         <p class="st-theme-muted">채팅 입력창에 표시될 안내 문구를 설정합니다. 비워두면 기본값이 사용됩니다.</p>
-
-                        <div class="st-theme-divider"></div>
-
-                        <div class="st-theme-setting-row">
-                            <div class="st-theme-toggle-row">
-                                <span>채팅 내비게이션 버튼</span>
-                                <label class="st-theme-switch">
-                                    <input type="checkbox" id="st-chat-nav-enabled" ${stCustomThemeSettings.chatNavEnabled ? 'checked' : ''}>
-                                    <span class="st-theme-slider"></span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="st-theme-setting-row" id="st-chat-nav-pos-container" style="${stCustomThemeSettings.chatNavEnabled ? '' : 'display:none;'}">
-                             <label for="st-chat-nav-position">내비게이션 버튼 위치</label>
-                             <select id="st-chat-nav-position">
-                                 <option value="bottom-right" ${stCustomThemeSettings.chatNavPosition === 'bottom-right' ? 'selected' : ''}>우측 하단 (기본)</option>
-                                 <option value="bottom-left" ${stCustomThemeSettings.chatNavPosition === 'bottom-left' ? 'selected' : ''}>좌측 하단</option>
-                                 <option value="top-right" ${stCustomThemeSettings.chatNavPosition === 'top-right' ? 'selected' : ''}>우측 상단</option>
-                                 <option value="top-left" ${stCustomThemeSettings.chatNavPosition === 'top-left' ? 'selected' : ''}>좌측 상단</option>
-                                 <option value="bottom-center" ${stCustomThemeSettings.chatNavPosition === 'bottom-center' ? 'selected' : ''}>중앙 하단</option>
-                                 <option value="top-center" ${stCustomThemeSettings.chatNavPosition === 'top-center' ? 'selected' : ''}>중앙 상단</option>
-                             </select>
-                        </div>
 
                         <div class="st-theme-divider"></div>
 
@@ -2415,7 +2386,7 @@ jQuery(async () => {
                 saveSettings();
                 toastr.success('테마 색상이 적용되었습니다.');
             } else {
-                toastr.warning('올바른 헥스 색상 코드를 입력해주세요. (예: #9aa894)');
+                toastr.warning('올바른 헥스 색상 코드를 입력해주세요. (예: #8b5cf6)');
             }
         });
 
@@ -2444,24 +2415,6 @@ jQuery(async () => {
             saveSettings();
         });
 
-        // Chat Nav Settings
-        $('#st-chat-nav-enabled').on('change', function () {
-            stCustomThemeSettings.chatNavEnabled = $(this).is(':checked');
-            if (stCustomThemeSettings.chatNavEnabled) {
-                $('#st-chat-nav-pos-container').slideDown(200);
-            } else {
-                $('#st-chat-nav-pos-container').slideUp(200);
-            }
-            saveSettings();
-            addChatNavButtons(); // Refresh buttons
-        });
-
-        $('#st-chat-nav-position').on('change', function () {
-            stCustomThemeSettings.chatNavPosition = $(this).val();
-            saveSettings();
-            addChatNavButtons(); // Refresh buttons
-        });
-
         // Button visibility toggles
         $('#st-button-toggles input[type="checkbox"]').on('change', function () {
             const btnId = $(this).data('btn-id');
@@ -2482,24 +2435,6 @@ jQuery(async () => {
         $('#st-prevent-click-outside').on('change', function () {
             stCustomThemeSettings.preventClickOutsideClose = $(this).is(':checked');
             saveSettings();
-        });
-
-        // Chat Nav Settings
-        $('#st-chat-nav-enabled').on('change', function () {
-            stCustomThemeSettings.chatNavEnabled = $(this).is(':checked');
-            if (stCustomThemeSettings.chatNavEnabled) {
-                $('#st-chat-nav-pos-container').slideDown(200);
-            } else {
-                $('#st-chat-nav-pos-container').slideUp(200);
-            }
-            saveSettings();
-            addChatNavButtons(); // Refresh buttons
-        });
-
-        $('#st-chat-nav-position').on('change', function () {
-            stCustomThemeSettings.chatNavPosition = $(this).val();
-            saveSettings();
-            addChatNavButtons(); // Refresh buttons
         });
 
         // Icon pack selection
@@ -2830,20 +2765,7 @@ jQuery(async () => {
             $('body').addClass('st-custom-theme-active');
 
             // Wrap #chat with a styled container if not already wrapped
-            // APP_READY 이벤트 후에 래핑하여 다른 확장 프로그램(Extension-TopInfoBar 등)이 먼저 로드되도록 함
-            if (!window.stChatWrapped) {
-                window.stChatWrapped = true;
-                const eventSource = SillyTavern.getContext().eventSource;
-                const event_types = SillyTavern.getContext().event_types;
-                if (eventSource && event_types) {
-                    eventSource.once(event_types.APP_READY, () => {
-                        setTimeout(wrapChatContainer, 100);
-                    });
-                } else {
-                    // Fallback: longer delay if event system not available
-                    setTimeout(wrapChatContainer, 2000);
-                }
-            }
+            wrapChatContainer();
 
             // Add custom theme info below Custom CSS block
             const customCSSBlock = $('#CustomCSS-block');
@@ -2925,23 +2847,8 @@ jQuery(async () => {
         if (chat.parent('#st-chat-wrapper').length > 0) {
             return;
         }
-
-        // TopInfoBar 호환성: 래핑 전에 TopInfoBar 요소 위치 기억
-        const topBar = $('#extensionTopBar');
-        const connectionProfiles = $('#extensionConnectionProfiles');
-
         // Wrap #chat with a styled div
         chat.wrap('<div id="st-chat-wrapper"></div>');
-
-        // TopInfoBar 요소들을 #st-chat-wrapper 앞으로 이동 (#sheld의 직접 자식으로 유지)
-        // 이렇게 하면 TopInfoBar가 먼저 로드되든 나중에 로드되든 정상 작동
-        const wrapper = $('#st-chat-wrapper');
-        if (topBar.length > 0) {
-            wrapper.before(topBar);
-        }
-        if (connectionProfiles.length > 0) {
-            wrapper.before(connectionProfiles);
-        }
     }
 
     function unwrapChatContainer() {
@@ -2978,8 +2885,6 @@ jQuery(async () => {
             window.stSidebarObserver.observe(topSettingsHolder, { childList: true });
 
         }
-
-
 
         if ($('#st-custom-sidebar').length > 0) {
             $('#st-custom-sidebar').show();
@@ -3064,11 +2969,7 @@ jQuery(async () => {
         $('body .drawer:not(.st-moved-drawer):not(.st-hamburger-moved-drawer)').each(function () {
             const drawer = $(this);
             // Skip if already in sidebar or hamburger holder
-            if (drawer.closest('#st-custom-sidebar').length > 0) {
-                // 이미 사이드바에 있지만 st-moved-drawer 클래스가 없는 경우 클래스만 추가
-                drawer.addClass('st-moved-drawer');
-                return;
-            }
+            if (drawer.closest('#st-custom-sidebar').length > 0) return;
             if (drawer.closest('#st-hamburger-drawer-holder').length > 0) return;
             if (drawer.closest('#st-hamburger-menu-bar').length > 0) return;
 
@@ -3141,25 +3042,7 @@ jQuery(async () => {
     // 햄버거 메뉴 (Hamburger Menu) 관련 함수
     // ============================================
 
-    // 햄버거 메뉴 바깥 클릭 핸들러 (Capture Phase 사용)
-    function handleHamburgerOutsideClick(e) {
-        const dropdown = document.getElementById('st-hamburger-dropdown');
-        const btn = document.getElementById('st-hamburger-btn');
-
-        if (!dropdown || !dropdown.classList.contains('st-dropdown-open')) return;
-
-        // 햄버거 버튼이나 드롭다운 내부 클릭은 무시
-        if (dropdown.contains(e.target) || (btn && btn.contains(e.target))) {
-            return;
-        }
-
-        closeHamburgerDropdown();
-    }
-
     function removeHamburgerMenu() {
-        // 이벤트 리스너 제거 (Capture Phase)
-        document.removeEventListener('click', handleHamburgerOutsideClick, true);
-
         // drawer들을 먼저 원래 위치로 복원 (순서 중요: 일반 drawer들이 먼저 들어가고 rightNavHolder가 마지막에 가야 함)
         restoreDrawersFromHamburger();
 
@@ -3276,10 +3159,15 @@ jQuery(async () => {
         });
 
         // 드롭다운 바깥 클릭 시 닫기
-        // 드롭다운 바깥 클릭 시 닫기 (Native Capture Phase)
-        // 기존 리스너 제거 후 추가 (중복 방지)
-        document.removeEventListener('click', handleHamburgerOutsideClick, true);
-        document.addEventListener('click', handleHamburgerOutsideClick, true);
+        $(document).on('click.hamburgerDropdown', function (e) {
+            const dropdown = $('#st-hamburger-dropdown');
+            if (!dropdown.hasClass('st-dropdown-open')) return;
+
+            // 햄버거 버튼이나 드롭다운 내부 클릭은 무시
+            if ($(e.target).closest('#st-hamburger-btn, #st-hamburger-dropdown').length > 0) return;
+
+            closeHamburgerDropdown();
+        });
 
         // 초기 로드 시 한 번만 drawer 닫기 (ST 초기화 후)
         if (!window.stHamburgerInitialized) {
@@ -3791,142 +3679,5 @@ jQuery(async () => {
         convertTableButtonToIcon();
     });
     tableButtonObserver.observe(document.body, { childList: true, subtree: true });
-
-    // Initialize Chat Nav Buttons
-    addChatNavButtons();
 });
-
-
-// 9. 채팅 내비게이션 버튼 추가 (Chat Navigation Buttons)
-function addChatNavButtons() {
-    // 기존 요소 제거 (버튼 및 앵커)
-    $('#st-chat-nav').remove();
-    $('#st-nav-anchor').remove();
-
-    if (!stCustomThemeSettings.chatNavEnabled) return;
-
-    const position = stCustomThemeSettings.chatNavPosition || 'bottom-right';
-    const positionClass = `st-chat-nav-${position}`;
-    const isTop = position.startsWith('top');
-
-    // 앵커와 버튼 HTML 구조
-    // 앵커는 높이 0의 기준선이 됨
-    const anchorHtml = `
-        <div id="st-nav-anchor" class="st-nav-anchor ${isTop ? 'st-anchor-top' : 'st-anchor-bottom'}">
-            <div id="st-chat-nav" class="st-chat-nav ${positionClass}">
-                <button id="st-nav-top" title="맨 위로"><i class="fa-solid fa-angles-up"></i></button>
-                <button id="st-nav-prev" title="이전 메시지"><i class="fa-solid fa-angle-up"></i></button>
-                <button id="st-nav-next" title="다음 메시지"><i class="fa-solid fa-angle-down"></i></button>
-                <button id="st-nav-bottom" title="맨 아래로"><i class="fa-solid fa-angles-down"></i></button>
-            </div>
-        </div>
-    `;
-
-    const chat = $('#chat');
-
-    // 위치에 따라 #chat의 앞(Top) 뒤(Bottom)에 앵커 삽입
-    // 이렇게 하면 #chat의 실제 DOM 흐름에 붙으므로, 입력창이 커져서 #chat이 줄어들면 앵커도 같이 움직임
-    if (isTop) {
-        chat.before(anchorHtml);
-    } else {
-        chat.after(anchorHtml);
-    }
-    // 버튼 클릭 이벤트 핸들러
-    $('#st-nav-top').on('click', function () {
-        chat.stop().animate({ scrollTop: 0 }, 300);
-    });
-
-    $('#st-nav-bottom').on('click', function () {
-        chat.stop().animate({ scrollTop: chat[0].scrollHeight }, 300);
-    });
-
-    $('#st-nav-prev').on('click', function () {
-        const scrollTop = chat.scrollTop();
-        const msgBlocks = chat.children('.mes');
-        if (msgBlocks.length === 0) return;
-
-        let targetPos = 0;
-        let found = false;
-
-        for (let i = 0; i < msgBlocks.length; i++) {
-            const el = msgBlocks[i];
-            if (el.offsetTop > scrollTop + 5) {
-                const currentIndex = Math.max(0, i - 1);
-                const currentEl = msgBlocks[currentIndex];
-
-                if (scrollTop - currentEl.offsetTop > 50) {
-                    targetPos = currentEl.offsetTop;
-                } else {
-                    const prevIndex = Math.max(0, currentIndex - 1);
-                    targetPos = msgBlocks[prevIndex].offsetTop;
-                }
-                found = true;
-                break;
-            }
-        }
-
-        if (!found) {
-
-            const lastIdx = msgBlocks.length - 1;
-            if (lastIdx >= 0) {
-                const lastEl = msgBlocks[lastIdx];
-                if (scrollTop - lastEl.offsetTop > 50) {
-                    targetPos = lastEl.offsetTop;
-                } else {
-                    targetPos = msgBlocks[Math.max(0, lastIdx - 1)].offsetTop;
-                }
-            }
-        }
-
-        chat.stop().animate({ scrollTop: targetPos }, 300);
-    });
-
-    $('#st-nav-next').on('click', function () {
-        const scrollTop = chat.scrollTop();
-        const msgBlocks = chat.children('.mes');
-        let targetPos = chat[0].scrollHeight;
-
-        for (let i = 0; i < msgBlocks.length; i++) {
-            const el = msgBlocks[i];
-            if (el.offsetTop > scrollTop + 50) {
-                targetPos = el.offsetTop;
-                break;
-            }
-        }
-        chat.stop().animate({ scrollTop: targetPos }, 300);
-    });
-
-    // 스크롤 이벤트 리스너 (버튼 숨김 처리)
-    function onScroll() {
-        const currentScroll = chat.scrollTop();
-        // chat[0].scrollHeight, clientHeight might be undefined if chat is not found, but standard ST has #chat
-        if (!chat[0]) return;
-
-        const maxScroll = chat[0].scrollHeight - chat[0].clientHeight;
-
-        if (currentScroll <= 10) {
-            $('#st-nav-top, #st-nav-prev').addClass('st-hidden-nav');
-        } else {
-            $('#st-nav-top, #st-nav-prev').removeClass('st-hidden-nav');
-        }
-
-        if (currentScroll >= maxScroll - 10) {
-            $('#st-nav-bottom, #st-nav-next').addClass('st-hidden-nav');
-        } else {
-            $('#st-nav-bottom, #st-nav-next').removeClass('st-hidden-nav');
-        }
-    }
-
-    let scrollTimeout;
-    chat.on('scroll', function () {
-        if (!scrollTimeout) {
-            scrollTimeout = requestAnimationFrame(function () {
-                onScroll();
-                scrollTimeout = null;
-            });
-        }
-    });
-
-    onScroll();
-}
 
