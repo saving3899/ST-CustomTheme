@@ -239,6 +239,9 @@ jQuery(async () => {
     initSettings();
     // Cache for localStorage fallback REMOVED
 
+    // Add Chat Navigation Buttons
+    addChatNavButtons();
+
     // Load persona-export.js module dynamically
     // Get current script's directory path for relative loading
     const currentScript = document.querySelector('script[src*="ST-CustomTheme/index.js"]');
@@ -1536,7 +1539,7 @@ jQuery(async () => {
                             <div class="st-theme-color-picker">
                                 <input type="color" id="st-theme-color" value="${stCustomThemeSettings.hoverColor}">
                                 <input type="text" id="st-theme-color-hex" value="${stCustomThemeSettings.hoverColor}"
-                                    placeholder="#8b5cf6" maxlength="7" class="st-theme-hex-input">
+                                    placeholder="#9aa894" maxlength="7" class="st-theme-hex-input">
                                 <button id="st-theme-color-apply" class="st-theme-btn-small">적용</button>
                             </div>
                         </div>
@@ -2386,7 +2389,7 @@ jQuery(async () => {
                 saveSettings();
                 toastr.success('테마 색상이 적용되었습니다.');
             } else {
-                toastr.warning('올바른 헥스 색상 코드를 입력해주세요. (예: #8b5cf6)');
+                toastr.warning('올바른 헥스 색상 코드를 입력해주세요. (예: #9aa894)');
             }
         });
 
@@ -3681,3 +3684,146 @@ jQuery(async () => {
     tableButtonObserver.observe(document.body, { childList: true, subtree: true });
 });
 
+
+// 9. 채팅 내비게이션 버튼 추가 (Chat Navigation Buttons)
+// 9. 채팅 내비게이션 버튼 추가 (Chat Navigation Buttons)
+function addChatNavButtons() {
+    // 이미 존재하면 제거 (중복 방지)
+    $('#st-chat-nav').remove();
+
+    // HTML 구조 생성
+    const navHtml = `
+        <div id="st-chat-nav" class="st-chat-nav">
+            <button id="st-nav-top" title="맨 위로"><i class="fa-solid fa-angles-up"></i></button>
+            <button id="st-nav-prev" title="이전 메시지"><i class="fa-solid fa-angle-up"></i></button>
+            <button id="st-nav-next" title="다음 메시지"><i class="fa-solid fa-angle-down"></i></button>
+            <button id="st-nav-bottom" title="맨 아래로"><i class="fa-solid fa-angles-down"></i></button>
+        </div>
+    `;
+
+    const chat = $('#chat');
+
+    // #chat의 부모 요소에 추가하여 채팅창 내부에 위치하도록 함
+    const chatParent = chat.parent();
+
+    // 부모 요소가 relative 포지셔닝을 가지도록 설정 (absolute 자식 배치를 위해)
+    if (chatParent.css('position') === 'static') {
+        chatParent.css('position', 'relative');
+    }
+
+    chatParent.append(navHtml);
+
+    // 버튼 클릭 이벤트 핸들러
+    $('#st-nav-top').on('click', function () {
+        chat.stop().animate({ scrollTop: 0 }, 300);
+    });
+
+    $('#st-nav-bottom').on('click', function () {
+        chat.stop().animate({ scrollTop: chat[0].scrollHeight }, 300);
+    });
+
+    $('#st-nav-prev').on('click', function () {
+        const scrollTop = chat.scrollTop();
+        const messages = chat.find('.mes_text').parent(); // .mes_block usually wrapper of .mes_text, but we should target message blocks directly.
+        // SillyTavern message blocks usually have 'mes' class or attribute.
+        // Let's use strict DOM logic for ST messages.
+        // They are direct children of #chat usually, class="mes"
+
+        const msgBlocks = chat.children('.mes');
+        if (msgBlocks.length === 0) return;
+
+        let targetPos = 0;
+        let found = false;
+
+        // 역순으로 탐색하여 현재 스크롤보다 위에 있는 첫 번째 메시지를 찾음 (현재 보이는 메시지)
+        // Find the "current" message (the one at the top of the viewport)
+        for (let i = 0; i < msgBlocks.length; i++) {
+            const el = msgBlocks[i];
+            const offsetTop = el.offsetTop;
+
+            // 현재 스크롤 위치보다 조금이라도 아래에 있는 메시지가 있다면, 그 바로 전 메시지가 "현재 메시지"임
+            if (offsetTop > scrollTop + 5) { // 5px tolerance
+                // i-1 is the current message
+                const currentIndex = Math.max(0, i - 1);
+                const currentEl = msgBlocks[currentIndex];
+
+                // 만약 현재 메시지의 상단보다 스크롤이 많이 내려가 있다면 (예: 메시지 읽는 중) -> 현재 메시지 상단으로
+                // If we are deep inside the current message (e.g. > 50px from top), scroll to its top
+                if (scrollTop - currentEl.offsetTop > 50) {
+                    targetPos = currentEl.offsetTop;
+                } else {
+                    // 이미 상단 근처라면 -> 이전 메시지 상단으로
+                    // If we are near the top, go to previous message
+                    const prevIndex = Math.max(0, currentIndex - 1);
+                    targetPos = msgBlocks[prevIndex].offsetTop;
+                }
+                found = true;
+                break;
+            }
+        }
+
+        // 만약 루프가 끝까지 돌았다면 (스크롤이 맨 아래라 모든 메시지가 위에 있음)
+        if (!found) {
+            const lastIdx = msgBlocks.length - 1;
+            const lastEl = msgBlocks[lastIdx];
+            if (scrollTop - lastEl.offsetTop > 50) {
+                targetPos = lastEl.offsetTop;
+            } else {
+                targetPos = msgBlocks[Math.max(0, lastIdx - 1)].offsetTop;
+            }
+        }
+
+        chat.stop().animate({ scrollTop: targetPos }, 300);
+    });
+
+    $('#st-nav-next').on('click', function () {
+        const scrollTop = chat.scrollTop();
+        const msgBlocks = chat.children('.mes');
+        let targetPos = chat[0].scrollHeight;
+
+        // 순방향 탐색
+        for (let i = 0; i < msgBlocks.length; i++) {
+            const el = msgBlocks[i];
+            // 현재 스크롤보다 확실히 아래에 시작하는 첫 번째 메시지
+            if (el.offsetTop > scrollTop + 50) { // +50 tolerance to avoid just jumping 1px
+                targetPos = el.offsetTop;
+                break;
+            }
+        }
+        chat.stop().animate({ scrollTop: targetPos }, 300);
+    });
+
+    // 스크롤 이벤트 리스너 (버튼 숨김 처리)
+    function onScroll() {
+        const currentScroll = chat.scrollTop();
+        const maxScroll = chat[0].scrollHeight - chat[0].clientHeight;
+
+        // 맨 위: Top, Prev 숨김
+        if (currentScroll <= 10) {
+            $('#st-nav-top, #st-nav-prev').addClass('st-hidden-nav');
+        } else {
+            $('#st-nav-top, #st-nav-prev').removeClass('st-hidden-nav');
+        }
+
+        // 맨 아래: Bottom, Next 숨김
+        if (currentScroll >= maxScroll - 10) {
+            $('#st-nav-bottom, #st-nav-next').addClass('st-hidden-nav');
+        } else {
+            $('#st-nav-bottom, #st-nav-next').removeClass('st-hidden-nav');
+        }
+    }
+
+    // Bind scroll with throttling
+    let scrollTimeout;
+    chat.on('scroll', function () {
+        if (!scrollTimeout) {
+            scrollTimeout = requestAnimationFrame(function () {
+                onScroll();
+                scrollTimeout = null;
+            });
+        }
+    });
+
+    // 초기 상태 체크
+    onScroll();
+}
