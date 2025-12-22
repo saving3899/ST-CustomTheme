@@ -3122,6 +3122,9 @@ jQuery(async () => {
             // delegated event를 쓰면 여기서 정리할 필요 없음.
         }
 
+        // Remove click outside listener
+        document.removeEventListener('click', handleHamburgerOutsideClick, true);
+
         // 햄버거 메뉴 요소들 제거
         $('#st-hamburger-menu-bar').remove();
         $('#st-hamburger-dropdown').remove();
@@ -3223,16 +3226,10 @@ jQuery(async () => {
             showSettingsPopup();
         });
 
-        // 드롭다운 바깥 클릭 시 닫기
-        $(document).on('click.hamburgerDropdown', function (e) {
-            const dropdown = $('#st-hamburger-dropdown');
-            if (!dropdown.hasClass('st-dropdown-open')) return;
-
-            // 햄버거 버튼이나 드롭다운 내부 클릭은 무시
-            if ($(e.target).closest('#st-hamburger-btn, #st-hamburger-dropdown').length > 0) return;
-
-            closeHamburgerDropdown();
-        });
+        // 드롭다운 바깥 클릭 시 닫기 (Capture Phase)
+        // 기존 리스너 제거 후 추가 (중복 방지)
+        document.removeEventListener('click', handleHamburgerOutsideClick, true);
+        document.addEventListener('click', handleHamburgerOutsideClick, true);
 
         // 초기 로드 시 한 번만 drawer 닫기 (ST 초기화 후)
         if (!window.stHamburgerInitialized) {
@@ -3410,6 +3407,19 @@ jQuery(async () => {
 
     function closeHamburgerDropdown() {
         $('#st-hamburger-dropdown').removeClass('st-dropdown-open');
+    }
+
+    // Capture Phase Handler for Hamburger Outside Click
+    function handleHamburgerOutsideClick(e) {
+        const dropdown = $('#st-hamburger-dropdown');
+        // 드롭다운이 닫혀있으면 무시
+        if (!dropdown.hasClass('st-dropdown-open')) return;
+
+        // 햄버거 버튼이나 드롭다운 내부 클릭은 무시
+        if ($(e.target).closest('#st-hamburger-btn, #st-hamburger-dropdown').length > 0) return;
+
+        // 그 외 모든 클릭(이벤트 전파가 중단된 경우 포함)에 대해 닫기 실행
+        closeHamburgerDropdown();
     }
 
     function openCharacterPanel() {

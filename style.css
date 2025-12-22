@@ -1780,6 +1780,9 @@ body.st-theme-dark #st-hamburger-menu-bar #rightNavHolder>.drawer-toggle:hover {
     opacity: 1;
     border-radius: 0;
     height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* 캐릭터 아바타 스타일 조정 */
