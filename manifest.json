@@ -1,6 +1,8 @@
 {
-    "display_name": "ST-CustomTheme",
+    "display_name": "깡갤 Custom Tavern",
     "version": "1.0.0",
+    "loading_order": 10,
     "js": "index.js",
-    "css": "style.css"
+    "css": "style.css",
+    "author": "Saving3899"
 }
