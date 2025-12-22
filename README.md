@@ -1,15 +1,51 @@
 # ST-CustomTheme
 
-A modern, customizable theme extension for SillyTavern.
+SillyTavern을 위한 강력한 커스텀 테마 및 편의성 개선 확장 프로그램입니다.
+사용자 인터페이스(UI)의 폰트, 색상, 레이아웃을 세밀하게 조정하고, 다양한 편의 기능을 제공하여 SillyTavern 경험을 향상시킵니다.
 
-## Description
-This extension transforms the SillyTavern interface into a clean, modern dashboard.
+## ✨ 주요 기능
 
-## Features
-- Dashboard-style "New Chat" screen
-- Floating input bar
-- Modern typography and color palette
-- Customizable visualization settings
+### 1. 폰트 및 텍스트 설정 (Typography)
+UI의 각 영역별로 폰트, 크기, 굵기, 줄 간격을 독립적으로 설정할 수 있습니다.
+*   **UI 폰트**: 메뉴, 설정 등 전체 인터페이스에 적용
+*   **입력창 폰트**: 메시지 입력 영역 (`#send_textarea`)
+*   **채팅 폰트**: 채팅 로그 텍스트
+*   **대화문(Dialogue) 폰트**: 캐릭터의 대화 내용 (`"..."`)만 별도 스타일 적용 가능
+*   **사용자 폰트 추가**: 로컬 폰트 파일을 CSS `@font-face`로 로드하여 사용
 
-## Installation
-Place this folder in `SillyTavern/data/default-user/extensions/ST-CustomTheme` or `SillyTavern/scripts/extensions/third-party/ST-CustomTheme`.
+### 2. 테마 및 레이아웃 (Theme & Layout)
+*   **테마 색상**: 포인트 컬러(Hover Color)를 자유롭게 변경하여 버튼, 슬라이더 등에 적용
+*   **다크 모드**: 확장 프로그램 전용 다크 모드 스타일 적용
+*   **반응형 레이아웃**: PC와 모바일 환경에 맞춰 메뉴 레이아웃을 자동/수동으로 전환
+
+### 3. 아이콘 및 앱 개인화 (Personalization)
+*   **아이콘 팩**: 메뉴 아이콘을 '디저트(Dessert)' 등 다른 스타일로 변경 가능
+*   **웹 앱(PWA) 설정**:
+    *   브라우저 탭 제목(Title) 변경
+    *   파비콘(Favicon) 및 홈 화면 아이콘(Web App Icon) 커스텀
+    *   웹 앱 이름 설정 (매니페스트 동적 수정)
+
+### 4. 편의성 기능 (Utilities)
+*   **토스트 알림 개선 (Toast Enhancer)**:
+    *   **Android 및 PC**: '내용 복사' 및 '닫기' 버튼 추가
+    *   **iOS**: '일시정지' 및 '닫기' 버튼 추가 (자동 닫힘을 방지하여 수동 복사 지원)
+    *   진행 표시줄(Progress Bar) 표시
+*   **페르소나 관리 (Persona Management)**:
+    *   **내보내기**: 페르소나 정보를 PNG 파일로 저장 (메타데이터 포함)
+    *   **불러오기**: PNG 파일을 드래그하거나 선택하여 페르소나 자동 등록
+*   **채팅 탐색 버튼**: 채팅창 최상단/최하단/중간으로 이동하는 플로팅 버튼 추가
+*   **기타**:
+    *   메시지 삭제 버튼 표시
+    *   입력창 플레이스홀더(Placeholder) 문구 변경
+    *   특정 확장 프로그램 메뉴 숨김 기능
+
+## 🛠 사용 방법
+
+1.  **설치**: SillyTavern의 Extensions 폴더에 설치합니다.
+2.  **설정**: 확장 프로그램 설정 메뉴(`ST-CustomTheme`)에서 원하는 옵션을 활성화하고 조정합니다.
+3.  **적용**: 설정을 변경하면 즉시 반영되거나, 일부 설정은 페이지 새로고침이 필요할 수 있습니다.
+
+## ⚠️ 주의사항
+
+*   이 확장 프로그램은 SillyTavern의 DOM 요소를 직접 조작하므로, SillyTavern 업데이트에 따라 일부 기능이 정상 작동하지 않을 수 있습니다.
+*   **폰트 설정**: 기본 제공 폰트 외에 사용자의 PC에 설치된 폰트나 웹 폰트를 사용하려면 **'커스텀 폰트'** 설정에서 `@font-face` CSS를 추가하여 사용할 수 있습니다.

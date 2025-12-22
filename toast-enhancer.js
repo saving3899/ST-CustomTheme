@@ -146,6 +146,10 @@
             });
         },
 
+        isIOS: function () {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        },
+
         enhanceToast: function (toast) {
             // Mark as enhanced to prevent double processing
             if (toast.hasAttribute('data-st-enhanced')) return;
@@ -170,15 +174,29 @@
             const btnContainer = document.createElement('div');
             btnContainer.className = 'st-toast-buttons';
 
-            // Copy button
-            const copyBtn = document.createElement('button');
-            copyBtn.className = 'st-toast-btn st-toast-copy';
-            copyBtn.innerHTML = '<i class="fa-solid fa-copy"></i>';
-            copyBtn.title = '내용 복사';
-            copyBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.copyToastContent(toast);
-            });
+            if (this.isIOS()) {
+                // Pause button for iOS
+                const pauseBtn = document.createElement('button');
+                pauseBtn.className = 'st-toast-btn st-toast-pause';
+                pauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                pauseBtn.title = '일시정지 (복사/읽기용)';
+                pauseBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.pauseToast(toast, pauseBtn);
+                });
+                btnContainer.appendChild(pauseBtn);
+            } else {
+                // Copy button for others
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'st-toast-btn st-toast-copy';
+                copyBtn.innerHTML = '<i class="fa-solid fa-copy"></i>';
+                copyBtn.title = '내용 복사';
+                copyBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.copyToastContent(toast);
+                });
+                btnContainer.appendChild(copyBtn);
+            }
 
             // Close button
             const closeBtn = document.createElement('button');
@@ -190,9 +208,29 @@
                 this.closeToast(toast);
             });
 
-            btnContainer.appendChild(copyBtn);
             btnContainer.appendChild(closeBtn);
             toast.appendChild(btnContainer);
+        },
+
+        pauseToast: function (toast, btn) {
+            // Simulate hover to pause the timer (toastr feature)
+            // But since we can't easily access the internal timer, we'll try to trigger mouseenter
+            // Note: toastr's mouseenter behavior clears the interval and hideEta
+
+            // Dispatch mouseenter to stop the timer
+            var event = new MouseEvent('mouseenter', {
+                'view': window,
+                'bubbles': true,
+                'cancelable': true
+            });
+            toast.dispatchEvent(event);
+
+            // Update button visual to show it's paused
+            btn.innerHTML = '<i class="fa-solid fa-lock"></i>';
+            btn.classList.add('active');
+
+            // Optionally, we could try to force the opacity to stay 1
+            toast.style.opacity = '1';
         },
 
         copyToastContent: function (toast) {
