@@ -2951,6 +2951,8 @@ jQuery(async () => {
 
         }
 
+
+
         if ($('#st-custom-sidebar').length > 0) {
             $('#st-custom-sidebar').show();
             return;
@@ -3033,10 +3035,10 @@ jQuery(async () => {
         // (iOS Safari might add drawers to different locations)
         $('body .drawer:not(.st-moved-drawer):not(.st-hamburger-moved-drawer)').each(function () {
             const drawer = $(this);
-            // Skip if already in sidebar or hamburger holder
-            if (drawer.closest('#st-custom-sidebar').length > 0) return;
+            // Skip if in hamburger holder (사이드바는 스킵하지 않음 - st-moved-drawer 없는 드로어는 처리 필요)
             if (drawer.closest('#st-hamburger-drawer-holder').length > 0) return;
             if (drawer.closest('#st-hamburger-menu-bar').length > 0) return;
+
 
             // Skip rightNavHolder - handled separately
             if (drawer.attr('id') === 'rightNavHolder') return;
@@ -3060,7 +3062,11 @@ jQuery(async () => {
                 drawer.find('.drawer-toggle').append(`<span class="st-sidebar-label">${title}</span>`);
             }
 
-            topContainer.append(drawer);
+
+            // 이미 사이드바 안에 있으면 위치 변경하지 않음 (CSS 클래스만 추가)
+            if (drawer.closest('#st-custom-sidebar').length === 0) {
+                topContainer.append(drawer);
+            }
         });
 
         // Also move any standalone buttons
@@ -3107,7 +3113,25 @@ jQuery(async () => {
     // 햄버거 메뉴 (Hamburger Menu) 관련 함수
     // ============================================
 
+    // 햄버거 메뉴 바깥 클릭 핸들러 (Capture Phase 사용)
+    function handleHamburgerOutsideClick(e) {
+        const dropdown = document.getElementById('st-hamburger-dropdown');
+        const btn = document.getElementById('st-hamburger-btn');
+
+        if (!dropdown || !dropdown.classList.contains('st-dropdown-open')) return;
+
+        // 햄버거 버튼이나 드롭다운 내부 클릭은 무시
+        if (dropdown.contains(e.target) || (btn && btn.contains(e.target))) {
+            return;
+        }
+
+        closeHamburgerDropdown();
+    }
+
     function removeHamburgerMenu() {
+        // 이벤트 리스너 제거 (Capture Phase)
+        document.removeEventListener('click', handleHamburgerOutsideClick, true);
+
         // drawer들을 먼저 원래 위치로 복원 (순서 중요: 일반 drawer들이 먼저 들어가고 rightNavHolder가 마지막에 가야 함)
         restoreDrawersFromHamburger();
 
@@ -3121,9 +3145,6 @@ jQuery(async () => {
             // 햄버거 모드에서 추가된 이벤트 핸들러 정리 (필요하다면)
             // delegated event를 쓰면 여기서 정리할 필요 없음.
         }
-
-        // Remove click outside listener
-        document.removeEventListener('click', handleHamburgerOutsideClick, true);
 
         // 햄버거 메뉴 요소들 제거
         $('#st-hamburger-menu-bar').remove();
@@ -3226,7 +3247,8 @@ jQuery(async () => {
             showSettingsPopup();
         });
 
-        // 드롭다운 바깥 클릭 시 닫기 (Capture Phase)
+        // 드롭다운 바깥 클릭 시 닫기
+        // 드롭다운 바깥 클릭 시 닫기 (Native Capture Phase)
         // 기존 리스너 제거 후 추가 (중복 방지)
         document.removeEventListener('click', handleHamburgerOutsideClick, true);
         document.addEventListener('click', handleHamburgerOutsideClick, true);
@@ -3407,19 +3429,6 @@ jQuery(async () => {
 
     function closeHamburgerDropdown() {
         $('#st-hamburger-dropdown').removeClass('st-dropdown-open');
-    }
-
-    // Capture Phase Handler for Hamburger Outside Click
-    function handleHamburgerOutsideClick(e) {
-        const dropdown = $('#st-hamburger-dropdown');
-        // 드롭다운이 닫혀있으면 무시
-        if (!dropdown.hasClass('st-dropdown-open')) return;
-
-        // 햄버거 버튼이나 드롭다운 내부 클릭은 무시
-        if ($(e.target).closest('#st-hamburger-btn, #st-hamburger-dropdown').length > 0) return;
-
-        // 그 외 모든 클릭(이벤트 전파가 중단된 경우 포함)에 대해 닫기 실행
-        closeHamburgerDropdown();
     }
 
     function openCharacterPanel() {
