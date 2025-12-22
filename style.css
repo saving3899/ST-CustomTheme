@@ -2203,6 +2203,15 @@ body.st-custom-theme-active.st-menu-layout-hamburger .zoomed_avatar {
         transform: translateX(-50%);
         left: 50% !important;
     }
+
+    body.st-custom-theme-active.st-menu-layout-hamburger #movingDivs>* {
+        left: 50% !important;
+        top: calc(27px + 5px + 5px) !important;
+        width: calc(100dvw - 10px) !important;
+        min-width: 45dvw !important;
+        filter: unset;
+        transform: translateX(-50%);
+    }
 }
 
 /* Even smaller screens */
