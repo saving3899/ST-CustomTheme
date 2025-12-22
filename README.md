@@ -1,4 +1,4 @@
-# ST-CustomTheme
+# 깡갤 Custom Tavern
 
 SillyTavern을 위한 강력한 커스텀 테마 및 편의성 개선 확장 프로그램입니다.
 사용자 인터페이스(UI)의 폰트, 색상, 레이아웃을 세밀하게 조정하고, 다양한 편의 기능을 제공하여 SillyTavern 경험을 향상시킵니다.
