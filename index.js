@@ -48,7 +48,9 @@ const defaultSettings = {
     hiddenExtensionItems: [], // List of hidden extension menu items (by text)
     spellcheckEnabled: false, // Spellcheck for #send_textarea (Default: Enabled, Toggle: Disable)
     alwaysShowExtraButtons: false, // 9-1. Extract Message Action Buttons
-    showDeleteButton: false // Message Delete Button
+    showDeleteButton: false, // Message Delete Button
+    chatNavEnabled: true, // 10. Chat Navigation Buttons
+    chatNavPosition: 'bottom-right' // 'bottom-right', 'top-right', 'bottom-left', 'top-left', 'bottom-center', 'top-center'
 };
 
 // 설정 객체 참조 (초기화 후 SillyTavern.getContext().extensionSettings에서 가져옴)
@@ -1758,6 +1760,30 @@ jQuery(async () => {
 
                         <div class="st-theme-divider"></div>
 
+                        <div class="st-theme-setting-row">
+                            <div class="st-theme-toggle-row">
+                                <span>채팅 내비게이션 버튼</span>
+                                <label class="st-theme-switch">
+                                    <input type="checkbox" id="st-chat-nav-enabled" ${stCustomThemeSettings.chatNavEnabled ? 'checked' : ''}>
+                                    <span class="st-theme-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="st-theme-setting-row" id="st-chat-nav-pos-container" style="${stCustomThemeSettings.chatNavEnabled ? '' : 'display:none;'}">
+                             <label for="st-chat-nav-position">내비게이션 버튼 위치</label>
+                             <select id="st-chat-nav-position">
+                                 <option value="bottom-right" ${stCustomThemeSettings.chatNavPosition === 'bottom-right' ? 'selected' : ''}>우측 하단 (기본)</option>
+                                 <option value="bottom-left" ${stCustomThemeSettings.chatNavPosition === 'bottom-left' ? 'selected' : ''}>좌측 하단</option>
+                                 <option value="top-right" ${stCustomThemeSettings.chatNavPosition === 'top-right' ? 'selected' : ''}>우측 상단</option>
+                                 <option value="top-left" ${stCustomThemeSettings.chatNavPosition === 'top-left' ? 'selected' : ''}>좌측 상단</option>
+                                 <option value="bottom-center" ${stCustomThemeSettings.chatNavPosition === 'bottom-center' ? 'selected' : ''}>중앙 하단</option>
+                                 <option value="top-center" ${stCustomThemeSettings.chatNavPosition === 'top-center' ? 'selected' : ''}>중앙 상단</option>
+                             </select>
+                        </div>
+
+                        <div class="st-theme-divider"></div>
+
                         <div class="st-theme-toggle-row">
                             <span>입력창 맞춤법 검사 끄기</span>
                             <label class="st-theme-switch">
@@ -2418,6 +2444,24 @@ jQuery(async () => {
             saveSettings();
         });
 
+        // Chat Nav Settings
+        $('#st-chat-nav-enabled').on('change', function () {
+            stCustomThemeSettings.chatNavEnabled = $(this).is(':checked');
+            if (stCustomThemeSettings.chatNavEnabled) {
+                $('#st-chat-nav-pos-container').slideDown(200);
+            } else {
+                $('#st-chat-nav-pos-container').slideUp(200);
+            }
+            saveSettings();
+            addChatNavButtons(); // Refresh buttons
+        });
+
+        $('#st-chat-nav-position').on('change', function () {
+            stCustomThemeSettings.chatNavPosition = $(this).val();
+            saveSettings();
+            addChatNavButtons(); // Refresh buttons
+        });
+
         // Button visibility toggles
         $('#st-button-toggles input[type="checkbox"]').on('change', function () {
             const btnId = $(this).data('btn-id');
@@ -2438,6 +2482,24 @@ jQuery(async () => {
         $('#st-prevent-click-outside').on('change', function () {
             stCustomThemeSettings.preventClickOutsideClose = $(this).is(':checked');
             saveSettings();
+        });
+
+        // Chat Nav Settings
+        $('#st-chat-nav-enabled').on('change', function () {
+            stCustomThemeSettings.chatNavEnabled = $(this).is(':checked');
+            if (stCustomThemeSettings.chatNavEnabled) {
+                $('#st-chat-nav-pos-container').slideDown(200);
+            } else {
+                $('#st-chat-nav-pos-container').slideUp(200);
+            }
+            saveSettings();
+            addChatNavButtons(); // Refresh buttons
+        });
+
+        $('#st-chat-nav-position').on('change', function () {
+            stCustomThemeSettings.chatNavPosition = $(this).val();
+            saveSettings();
+            addChatNavButtons(); // Refresh buttons
         });
 
         // Icon pack selection
@@ -3682,37 +3744,46 @@ jQuery(async () => {
         convertTableButtonToIcon();
     });
     tableButtonObserver.observe(document.body, { childList: true, subtree: true });
+
+    // Initialize Chat Nav Buttons
+    addChatNavButtons();
 });
 
 
 // 9. 채팅 내비게이션 버튼 추가 (Chat Navigation Buttons)
-// 9. 채팅 내비게이션 버튼 추가 (Chat Navigation Buttons)
 function addChatNavButtons() {
-    // 이미 존재하면 제거 (중복 방지)
+    // 기존 요소 제거 (버튼 및 앵커)
     $('#st-chat-nav').remove();
+    $('#st-nav-anchor').remove();
 
-    // HTML 구조 생성
-    const navHtml = `
-        <div id="st-chat-nav" class="st-chat-nav">
-            <button id="st-nav-top" title="맨 위로"><i class="fa-solid fa-angles-up"></i></button>
-            <button id="st-nav-prev" title="이전 메시지"><i class="fa-solid fa-angle-up"></i></button>
-            <button id="st-nav-next" title="다음 메시지"><i class="fa-solid fa-angle-down"></i></button>
-            <button id="st-nav-bottom" title="맨 아래로"><i class="fa-solid fa-angles-down"></i></button>
+    if (!stCustomThemeSettings.chatNavEnabled) return;
+
+    const position = stCustomThemeSettings.chatNavPosition || 'bottom-right';
+    const positionClass = `st-chat-nav-${position}`;
+    const isTop = position.startsWith('top');
+
+    // 앵커와 버튼 HTML 구조
+    // 앵커는 높이 0의 기준선이 됨
+    const anchorHtml = `
+        <div id="st-nav-anchor" class="st-nav-anchor ${isTop ? 'st-anchor-top' : 'st-anchor-bottom'}">
+            <div id="st-chat-nav" class="st-chat-nav ${positionClass}">
+                <button id="st-nav-top" title="맨 위로"><i class="fa-solid fa-angles-up"></i></button>
+                <button id="st-nav-prev" title="이전 메시지"><i class="fa-solid fa-angle-up"></i></button>
+                <button id="st-nav-next" title="다음 메시지"><i class="fa-solid fa-angle-down"></i></button>
+                <button id="st-nav-bottom" title="맨 아래로"><i class="fa-solid fa-angles-down"></i></button>
+            </div>
         </div>
     `;
 
     const chat = $('#chat');
 
-    // #chat의 부모 요소에 추가하여 채팅창 내부에 위치하도록 함
-    const chatParent = chat.parent();
-
-    // 부모 요소가 relative 포지셔닝을 가지도록 설정 (absolute 자식 배치를 위해)
-    if (chatParent.css('position') === 'static') {
-        chatParent.css('position', 'relative');
+    // 위치에 따라 #chat의 앞(Top) 뒤(Bottom)에 앵커 삽입
+    // 이렇게 하면 #chat의 실제 DOM 흐름에 붙으므로, 입력창이 커져서 #chat이 줄어들면 앵커도 같이 움직임
+    if (isTop) {
+        chat.before(anchorHtml);
+    } else {
+        chat.after(anchorHtml);
     }
-
-    chatParent.append(navHtml);
-
     // 버튼 클릭 이벤트 핸들러
     $('#st-nav-top').on('click', function () {
         chat.stop().animate({ scrollTop: 0 }, 300);
@@ -3724,36 +3795,21 @@ function addChatNavButtons() {
 
     $('#st-nav-prev').on('click', function () {
         const scrollTop = chat.scrollTop();
-        const messages = chat.find('.mes_text').parent(); // .mes_block usually wrapper of .mes_text, but we should target message blocks directly.
-        // SillyTavern message blocks usually have 'mes' class or attribute.
-        // Let's use strict DOM logic for ST messages.
-        // They are direct children of #chat usually, class="mes"
-
         const msgBlocks = chat.children('.mes');
         if (msgBlocks.length === 0) return;
 
         let targetPos = 0;
         let found = false;
 
-        // 역순으로 탐색하여 현재 스크롤보다 위에 있는 첫 번째 메시지를 찾음 (현재 보이는 메시지)
-        // Find the "current" message (the one at the top of the viewport)
         for (let i = 0; i < msgBlocks.length; i++) {
             const el = msgBlocks[i];
-            const offsetTop = el.offsetTop;
-
-            // 현재 스크롤 위치보다 조금이라도 아래에 있는 메시지가 있다면, 그 바로 전 메시지가 "현재 메시지"임
-            if (offsetTop > scrollTop + 5) { // 5px tolerance
-                // i-1 is the current message
+            if (el.offsetTop > scrollTop + 5) {
                 const currentIndex = Math.max(0, i - 1);
                 const currentEl = msgBlocks[currentIndex];
 
-                // 만약 현재 메시지의 상단보다 스크롤이 많이 내려가 있다면 (예: 메시지 읽는 중) -> 현재 메시지 상단으로
-                // If we are deep inside the current message (e.g. > 50px from top), scroll to its top
                 if (scrollTop - currentEl.offsetTop > 50) {
                     targetPos = currentEl.offsetTop;
                 } else {
-                    // 이미 상단 근처라면 -> 이전 메시지 상단으로
-                    // If we are near the top, go to previous message
                     const prevIndex = Math.max(0, currentIndex - 1);
                     targetPos = msgBlocks[prevIndex].offsetTop;
                 }
@@ -3762,14 +3818,16 @@ function addChatNavButtons() {
             }
         }
 
-        // 만약 루프가 끝까지 돌았다면 (스크롤이 맨 아래라 모든 메시지가 위에 있음)
         if (!found) {
+
             const lastIdx = msgBlocks.length - 1;
-            const lastEl = msgBlocks[lastIdx];
-            if (scrollTop - lastEl.offsetTop > 50) {
-                targetPos = lastEl.offsetTop;
-            } else {
-                targetPos = msgBlocks[Math.max(0, lastIdx - 1)].offsetTop;
+            if (lastIdx >= 0) {
+                const lastEl = msgBlocks[lastIdx];
+                if (scrollTop - lastEl.offsetTop > 50) {
+                    targetPos = lastEl.offsetTop;
+                } else {
+                    targetPos = msgBlocks[Math.max(0, lastIdx - 1)].offsetTop;
+                }
             }
         }
 
@@ -3781,11 +3839,9 @@ function addChatNavButtons() {
         const msgBlocks = chat.children('.mes');
         let targetPos = chat[0].scrollHeight;
 
-        // 순방향 탐색
         for (let i = 0; i < msgBlocks.length; i++) {
             const el = msgBlocks[i];
-            // 현재 스크롤보다 확실히 아래에 시작하는 첫 번째 메시지
-            if (el.offsetTop > scrollTop + 50) { // +50 tolerance to avoid just jumping 1px
+            if (el.offsetTop > scrollTop + 50) {
                 targetPos = el.offsetTop;
                 break;
             }
@@ -3796,16 +3852,17 @@ function addChatNavButtons() {
     // 스크롤 이벤트 리스너 (버튼 숨김 처리)
     function onScroll() {
         const currentScroll = chat.scrollTop();
+        // chat[0].scrollHeight, clientHeight might be undefined if chat is not found, but standard ST has #chat
+        if (!chat[0]) return;
+
         const maxScroll = chat[0].scrollHeight - chat[0].clientHeight;
 
-        // 맨 위: Top, Prev 숨김
         if (currentScroll <= 10) {
             $('#st-nav-top, #st-nav-prev').addClass('st-hidden-nav');
         } else {
             $('#st-nav-top, #st-nav-prev').removeClass('st-hidden-nav');
         }
 
-        // 맨 아래: Bottom, Next 숨김
         if (currentScroll >= maxScroll - 10) {
             $('#st-nav-bottom, #st-nav-next').addClass('st-hidden-nav');
         } else {
@@ -3813,7 +3870,6 @@ function addChatNavButtons() {
         }
     }
 
-    // Bind scroll with throttling
     let scrollTimeout;
     chat.on('scroll', function () {
         if (!scrollTimeout) {
@@ -3824,6 +3880,6 @@ function addChatNavButtons() {
         }
     });
 
-    // 초기 상태 체크
     onScroll();
 }
+

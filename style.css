@@ -2148,8 +2148,8 @@ body.st-custom-theme-active.st-menu-layout-hamburger .zoomed_avatar {
     }
 
     body.st-menu-layout-hamburger.st-custom-theme-active #st-hamburger-drawer-holder .drawer-content {
-        top: calc(8px + 30px + 2px);
-        max-height: calc(100dvh - 20px - 20px - 5px);
+        top: calc(8px + 27px + 2px);
+        max-height: calc(100dvh - 20px - 17px - 5px);
         width: calc(100dvw - 10px) !important;
         transform: unset !important;
     }
@@ -2163,9 +2163,9 @@ body.st-custom-theme-active.st-menu-layout-hamburger .zoomed_avatar {
     body.st-menu-layout-hamburger.st-custom-theme-active #st-hamburger-drawer-holder .drawer-content.fillLeft,
     body.st-menu-layout-hamburger.st-custom-theme-active #st-hamburger-menu-bar .drawer-content.fillRight {
         width: calc((100dvw - 10px)) !important;
-        max-height: calc(100dvh - 45px) !important;
+        max-height: calc(100dvh - 42px) !important;
         border-radius: 8px;
-        top: 40px !important;
+        top: 37px !important;
         transform: unset !important;
     }
 
@@ -2177,7 +2177,7 @@ body.st-custom-theme-active.st-menu-layout-hamburger .zoomed_avatar {
     body.st-menu-layout-hamburger.st-custom-theme-active #st-hamburger-menu-bar .drawer-content.fillRight {
         left: 0 !important;
         right: auto !important;
-        top: 35px !important;
+        top: 32px !important;
     }
 
     .st-custom-theme-active .scrollableInner {
@@ -2199,8 +2199,9 @@ body.st-custom-theme-active.st-menu-layout-hamburger .zoomed_avatar {
         max-width: calc((100dvw - 10px));
         left: 50%;
         max-height: calc(100dvh - 45px) !important;
-        top: 40px;
+        top: 37px;
         transform: translateX(-50%);
+        left: 50% !important;
     }
 }
 
@@ -3023,36 +3024,110 @@ body.st-theme-dark .st-sticky-header {
     }
 }
 
-/* Chat Navigation Buttons */
-/* Chat Navigation Buttons */
-/* Chat Navigation Buttons */
-.st-chat-nav {
-    position: absolute;
-    /* fixed -> absolute (부모 기준 배치) */
-    bottom: calc(240px + env(safe-area-inset-bottom));
-    right: calc(20px + env(safe-area-inset-right));
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    z-index: 900;
-    /* Sidebar(10000)보다 낮게, Chat 내용보다는 높게 */
-    transition: opacity 0.3s;
+/* Chat Navigation Buttons & Anchor */
+
+/* Anchor: #chat 요소의 바로 위/아래에 삽입되어 기준점이 됨 */
+.st-nav-anchor {
+    position: relative;
+    height: 0;
+    width: 100%;
+    z-index: 890;
+    overflow: visible;
+    pointer-events: none;
+    /* 앵커 자체는 클릭 방해 X */
 }
 
-/* 모바일에서는 조금 더 위로/안쪽으로 */
-body.st-view-mobile .st-chat-nav {
-    /* iOS Safe Area 대응 */
-    bottom: calc(240px + env(safe-area-inset-bottom));
+/* Common Styles for Nav Container */
+.st-chat-nav {
+    position: absolute;
+    display: flex;
+    gap: 8px;
+    z-index: 900;
+    transition: opacity 0.3s;
+    pointer-events: auto;
+    /* 버튼은 클릭 가능 */
+}
+
+/* Vertical Layout (Left/Right Side) */
+.st-chat-nav-bottom-right,
+.st-chat-nav-bottom-left,
+.st-chat-nav-top-right,
+.st-chat-nav-top-left {
+    flex-direction: column;
+}
+
+/* Horizontal Layout (Center Side) */
+.st-chat-nav-bottom-center,
+.st-chat-nav-top-center {
+    flex-direction: row;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* --- Position Specifics (Relative to Anchor) --- */
+
+/* Bottom Right */
+.st-chat-nav-bottom-right {
+    bottom: 20px;
+    /* 앵커 위로 20px (입력창 위) */
+    right: 20px;
+}
+
+/* Mobile Offset (Safe Area optional if #sheld already handles it, but good to have) */
+body.st-view-mobile .st-chat-nav-bottom-right {
     right: calc(20px + env(safe-area-inset-right));
+}
+
+/* Bottom Left */
+.st-chat-nav-bottom-left {
+    bottom: 20px;
+    left: 20px;
+}
+
+body.st-view-mobile .st-chat-nav-bottom-left {
+    left: calc(20px + env(safe-area-inset-left));
+}
+
+/* Top Right */
+.st-chat-nav-top-right {
+    top: 20px;
+    /* 앵커 아래로 20px */
+    right: 20px;
+}
+
+body.st-view-mobile .st-chat-nav-top-right {
+    right: calc(20px + env(safe-area-inset-right));
+}
+
+/* Top Left */
+.st-chat-nav-top-left {
+    top: 20px;
+    left: 20px;
+}
+
+body.st-view-mobile .st-chat-nav-top-left {
+    left: calc(20px + env(safe-area-inset-left));
+}
+
+/* Bottom Center (Horizontal) */
+.st-chat-nav-bottom-center {
+    bottom: 20px;
+    /* 중앙 하단도 20px 띄움 (입력창 바로 위) */
+}
+
+/* Top Center (Horizontal) */
+.st-chat-nav-top-center {
+    top: 20px;
 }
 
 .st-chat-nav button {
     width: 30px;
     height: 30px;
     border-radius: 50%;
-    border: none;
-    background: rgba(0, 0, 0, 0.4);
-    color: white;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.8);
+    /* Default: Light Mode */
+    color: #333;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -3060,19 +3135,40 @@ body.st-view-mobile .st-chat-nav {
     transition: all 0.2s;
     backdrop-filter: blur(4px);
     font-size: 14px;
-    /* 아이콘 크기 조정 */
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
 }
 
 .st-chat-nav button:hover {
     background: var(--st-theme-color, #9aa894);
-    transform: scale(1.1);
+    color: white;
+    border-color: transparent;
 }
 
 .st-chat-nav button i {
-    color: white !important;
+    color: #333 !important;
+    /* Default: Dark Icon */
     font-size: 14px !important;
-    /* 아이콘 크기 조정 */
+}
+
+.st-chat-nav button:hover i {
+    color: white !important;
+}
+
+/* Original Dark Mode Styles (Scoped) */
+body.st-theme-dark .st-chat-nav button {
+    background: rgba(0, 0, 0, 0.4);
+    color: white;
+    border: none;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+body.st-theme-dark .st-chat-nav button:hover {
+    background: var(--st-theme-color, #9aa894);
+    color: white;
+}
+
+body.st-theme-dark .st-chat-nav button i {
+    color: white !important;
 }
 
 /* 숨겨진 상태 (투명도 조절 or display none) */
