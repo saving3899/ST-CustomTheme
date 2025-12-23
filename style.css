@@ -1145,7 +1145,7 @@ body.st-custom-theme-active #mes_stop {
 }
 
 /* Ensure icons are centered and sizing is strictly enforced */
-body.st-custom-theme-active #send_form .interactable>*,
+body.st-custom-theme-active #send_form .interactable> :not(#quickPersonaImg),
 body.st-custom-theme-active #send_form .menu_button>*,
 body.st-custom-theme-active #send_form .stscript_btn>*,
 body.st-custom-theme-active #mes_stop>* {
@@ -1960,6 +1960,21 @@ body.st-custom-theme-active.st-menu-layout-hamburger div[name="templatesAndPopup
     right: auto !important;
     max-height: calc(100dvh - 20px - 20px - 5px);
     width: var(--sheldWidth);
+}
+
+body.st-custom-theme-active #send_form #quickPersona {
+    overflow: hidden;
+}
+
+body.st-custom-theme-active #send_form .interactable #quickPersonaImg {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: unset !important;
+    max-height: unset !important;
+    min-width: 28px;
+    min-height: 28px;
+    border-radius: 5px !important;
+    box-sizing: border-box;
 }
 
 
