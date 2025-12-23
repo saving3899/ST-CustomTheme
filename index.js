@@ -2929,13 +2929,25 @@ jQuery(async () => {
         // TopInfoBar 호환성: 래핑 전에 TopInfoBar 요소 위치 기억
         const topBar = $('#extensionTopBar');
         const connectionProfiles = $('#extensionConnectionProfiles');
+        // 채팅 내비게이션 앵커 위치 기억 (TopInfoBar와 섞이지 않도록)
+        const navAnchor = $('#st-nav-anchor');
 
         // Wrap #chat with a styled div
         chat.wrap('<div id="st-chat-wrapper"></div>');
 
+        const wrapper = $('#st-chat-wrapper');
+
+        // 내비게이션 앵커를 래퍼 내부로 이동 (채팅창과 함께 묶임)
+        if (navAnchor.length > 0) {
+            if (navAnchor.hasClass('st-anchor-top')) {
+                wrapper.prepend(navAnchor);
+            } else {
+                wrapper.append(navAnchor);
+            }
+        }
+
         // TopInfoBar 요소들을 #st-chat-wrapper 앞으로 이동 (#sheld의 직접 자식으로 유지)
         // 이렇게 하면 TopInfoBar가 먼저 로드되든 나중에 로드되든 정상 작동
-        const wrapper = $('#st-chat-wrapper');
         if (topBar.length > 0) {
             wrapper.before(topBar);
         }
