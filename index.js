@@ -50,7 +50,7 @@ const defaultSettings = {
     alwaysShowExtraButtons: false, // 9-1. Extract Message Action Buttons
     showDeleteButton: false, // Message Delete Button
     chatNavEnabled: true, // 10. Chat Navigation Buttons
-    chatNavPosition: 'bottom-right' // 'bottom-right', 'top-right', 'bottom-left', 'top-left', 'bottom-center', 'top-center'
+    chatNavPosition: 'bottom-center' // 'bottom-right', 'top-right', 'bottom-left', 'top-left', 'bottom-center', 'top-center'
 };
 
 // 설정 객체 참조 (초기화 후 SillyTavern.getContext().extensionSettings에서 가져옴)
@@ -1773,12 +1773,12 @@ jQuery(async () => {
                         <div class="st-theme-setting-row" id="st-chat-nav-pos-container" style="${stCustomThemeSettings.chatNavEnabled ? '' : 'display:none;'}">
                              <label for="st-chat-nav-position">내비게이션 버튼 위치</label>
                              <select id="st-chat-nav-position">
-                                 <option value="bottom-right" ${stCustomThemeSettings.chatNavPosition === 'bottom-right' ? 'selected' : ''}>우측 하단 (기본)</option>
-                                 <option value="bottom-left" ${stCustomThemeSettings.chatNavPosition === 'bottom-left' ? 'selected' : ''}>좌측 하단</option>
-                                 <option value="top-right" ${stCustomThemeSettings.chatNavPosition === 'top-right' ? 'selected' : ''}>우측 상단</option>
-                                 <option value="top-left" ${stCustomThemeSettings.chatNavPosition === 'top-left' ? 'selected' : ''}>좌측 상단</option>
-                                 <option value="bottom-center" ${stCustomThemeSettings.chatNavPosition === 'bottom-center' ? 'selected' : ''}>중앙 하단</option>
-                                 <option value="top-center" ${stCustomThemeSettings.chatNavPosition === 'top-center' ? 'selected' : ''}>중앙 상단</option>
+                             <option value="top-right" ${stCustomThemeSettings.chatNavPosition === 'top-right' ? 'selected' : ''}>우측 상단</option>
+                             <option value="bottom-right" ${stCustomThemeSettings.chatNavPosition === 'bottom-right' ? 'selected' : ''}>우측 하단</option>
+                             <option value="top-left" ${stCustomThemeSettings.chatNavPosition === 'top-left' ? 'selected' : ''}>좌측 상단</option>
+                             <option value="bottom-left" ${stCustomThemeSettings.chatNavPosition === 'bottom-left' ? 'selected' : ''}>좌측 하단</option>
+                             <option value="top-center" ${stCustomThemeSettings.chatNavPosition === 'top-center' ? 'selected' : ''}>중앙 상단</option>
+                             <option value="bottom-center" ${stCustomThemeSettings.chatNavPosition === 'bottom-center' ? 'selected' : ''}>중앙 하단 (기본)</option>
                              </select>
                         </div>
 
