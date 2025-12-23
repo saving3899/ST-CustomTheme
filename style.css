@@ -1010,9 +1010,9 @@ body.st-custom-sidebar-active #top-settings-holder {
 }
 
 #rightNavHolder>.drawer-toggle.stcs--char:after {
-    top: 2.5px;
-    left: 2.5px;
-    width: 35px;
+    top: 5px !important;
+    left: 5px !important;
+    width: 30px;
 }
 
 /* Chat Input Area Redesign */
@@ -1101,7 +1101,7 @@ body.st-custom-theme-active #leftSendForm {
     flex: 1 !important;
     padding-left: 0 !important;
     /* Top margin to separate from textarea */
-    min-height: 40px !important;
+    min-height: 28px !important;
 }
 
 /* 3. Right Buttons - Bottom Row Right */
@@ -1113,7 +1113,7 @@ body.st-custom-theme-active #rightSendForm {
     gap: 5px !important;
     padding-right: 5px !important;
     margin-top: 5px !important;
-    min-height: 40px !important;
+    min-height: 28px !important;
 }
 
 /* Button Styling (General) */
@@ -1787,8 +1787,8 @@ body.st-theme-dark #st-hamburger-menu-bar #rightNavHolder>.drawer-toggle:hover {
 
 /* 캐릭터 아바타 스타일 조정 */
 #st-hamburger-menu-bar #rightNavHolder>.drawer-toggle.stcs--char:after {
-    top: 50%;
-    left: 50%;
+    top: 50% !important;
+    left: 50% !important;
     transform: translate(-50%, -50%);
     width: 28px;
     border-radius: 0;
@@ -1941,8 +1941,8 @@ body.st-custom-theme-active.st-menu-layout-hamburger .zoomed_avatar {
     }
 
     #rightNavHolder>.drawer-toggle.stcs--char:after {
-        top: 2px;
-        left: 2px;
+        top: 2px !important;
+        left: 2px !important;
         width: 30px;
     }
 
@@ -2214,6 +2214,21 @@ body.st-custom-theme-active.st-menu-layout-hamburger .zoomed_avatar {
         min-width: 45dvw !important;
         filter: unset;
         transform: translateX(-50%);
+    }
+
+    .st-custom-theme-active #send_form {
+        padding: 5px 8px !important;
+        margin-top: 5px !important;
+        padding-bottom: 8px !important;
+    }
+
+    body.st-custom-theme-active #send_textarea {
+        padding: 5px 5px 0 5px !important;
+        margin-bottom: 5px !important
+    }
+
+    body.st-custom-theme-active #leftSendForm {
+        min-height: 28px !important;
     }
 }
 
