@@ -3058,7 +3058,7 @@ body.st-theme-dark .st-sticky-header {
     position: relative;
     height: 0;
     width: 100%;
-    z-index: 890;
+    z-index: 99;
     overflow: visible;
     pointer-events: none;
     /* 앵커 자체는 클릭 방해 X */
