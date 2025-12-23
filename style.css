@@ -1674,7 +1674,6 @@ body.st-menu-layout-hamburger.st-custom-theme-active #sheld {
     padding-left: 0;
     width: var(--sheldWidth) !important;
     overflow-x: visible;
-
 }
 
 @supports (-webkit-touch-callout: none) {
@@ -1966,6 +1965,10 @@ body.st-custom-theme-active.st-menu-layout-hamburger div[name="templatesAndPopup
 @media (max-width: 1000px) {
     #chat {
         /* border: none !important; */
+    }
+
+    body.st-menu-layout-hamburger.st-custom-theme-active #sheld {
+        width: calc(100dvw - 10px) !important;
     }
 
     #rightNavHolder>.drawer-toggle.stcs--char:after {
