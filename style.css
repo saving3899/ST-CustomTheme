@@ -1025,7 +1025,7 @@ body.st-custom-sidebar-active #top-settings-holder {
 }
 
 .st-custom-theme-active #send_form {
-    padding: 10px 15px !important;
+    padding: 10px 12px !important;
     position: relative !important;
     transition: background-color 0.3s ease !important;
     /* Removed 'all' to prevent border animation glitches */
@@ -2219,7 +2219,8 @@ body.st-custom-theme-active.st-menu-layout-hamburger .zoomed_avatar {
     .st-custom-theme-active #send_form {
         padding: 5px 8px !important;
         margin-top: 5px !important;
-        padding-bottom: 8px !important;
+        /* 패딩바텀 넣을까말까 고민됨 */
+        /* padding-bottom: 8px !important; */
     }
 
     body.st-custom-theme-active #send_textarea {
