@@ -3080,7 +3080,7 @@ body.st-theme-dark .st-sticky-header {
 
 /* Bottom Right */
 .st-chat-nav-bottom-right {
-    bottom: 20px;
+    bottom: 50px;
     /* 앵커 위로 20px (입력창 위) */
     right: 20px;
 }
@@ -3092,7 +3092,7 @@ body.st-view-mobile .st-chat-nav-bottom-right {
 
 /* Bottom Left */
 .st-chat-nav-bottom-left {
-    bottom: 20px;
+    bottom: 50px;
     left: 20px;
 }
 
