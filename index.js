@@ -3127,6 +3127,22 @@ jQuery(async () => {
                 topContainer.append(btn);
             }
         });
+
+        // Loop 4: Check existing sidebar drawers for missing labels (Handle late-populated extensions)
+        $('#st-sidebar-top-container .st-moved-drawer').each(function () {
+            const drawer = $(this);
+            // Only if label is missing
+            if (drawer.find('.st-sidebar-label').length === 0) {
+                const drawerToggle = drawer.find('.drawer-toggle');
+                // Only if drawer-toggle exists (it might have been added late)
+                if (drawerToggle.length > 0) {
+                    const drawerId = drawer.attr('id') || 'unknown';
+                    const fallbackTitle = drawer.find('.drawer-icon').attr('title');
+                    const title = getMenuName(drawerId, fallbackTitle);
+                    drawerToggle.append(`<span class="st-sidebar-label">${title}</span>`);
+                }
+            }
+        });
     }
 
     function restoreButtons() {
