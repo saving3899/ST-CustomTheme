@@ -53,13 +53,14 @@
 }
 
 .st-custom-theme-active #sheld {
-    padding-left: calc(65px + env(safe-area-inset-left));
+    /* padding-left: calc(65px + env(safe-area-inset-left)); */
     box-sizing: border-box;
-    width: calc((var(--sheldWidth)) + 70px) !important;
+    width: calc((var(--sheldWidth)) + 70px - (calc(65px + env(safe-area-inset-left)))) !important;
     height: calc(100dvh - 10px) !important;
     max-height: calc(100dvh - 10px) !important;
     top: 50% !important;
     transform: translateY(-50%);
+    left: calc(65px + env(safe-area-inset-left));
 }
 
 .st-custom-theme-active #extensionTopBar {
@@ -795,7 +796,7 @@ body.st-custom-sidebar-active #right-nav-toggle {
 .st-sidebar-bottom {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     gap: 4px;
     width: 100%;
     padding: 0 10px;
@@ -868,6 +869,7 @@ body.st-custom-sidebar-active #top-settings-holder {
     display: flex;
     align-items: center;
     justify-content: flex-start;
+    width: 100%;
 }
 
 /* When we move ST buttons, they might have their own classes/IDs.
@@ -1674,12 +1676,14 @@ body.st-menu-layout-hamburger.st-custom-theme-active #sheld {
     padding-left: 0;
     width: var(--sheldWidth) !important;
     overflow-x: visible;
+    left: 0 !important;
 }
 
 @supports (-webkit-touch-callout: none) {
     body.st-menu-layout-hamburger.st-custom-theme-active #sheld {
-        left: 50%;
+        left: 50% !important;
         transform: translate(-50%, -50%) !important;
+        padding-left: 0 !important;
     }
 }
 
@@ -2029,13 +2033,13 @@ body.st-custom-theme-active.st-menu-layout-hamburger div[name="templatesAndPopup
     }
 
     .st-custom-theme-active #sheld {
-        padding-left: calc(50.5px + env(safe-area-inset-left)) !important;
+        /* padding-left: calc(50.5px + env(safe-area-inset-left)) !important; */
         height: calc(100dvh - 10px);
         max-height: calc(100dvh - 10px);
         top: 50%;
-        left: 50% !important;
+        left: calc(50% + calc(calc(50.5px / 2) + env(safe-area-inset-left))) !important;
         transform: translate(-50%, -50%);
-        width: calc(100dvw - 10px) !important;
+        width: calc(100dvw - 10px - (calc(50.5px + env(safe-area-inset-left)))) !important;
     }
 
     #st-custom-sidebar .st-moved-drawer {
@@ -2169,7 +2173,7 @@ body.st-custom-theme-active.st-menu-layout-hamburger div[name="templatesAndPopup
 
     /* 햄버거 모바일 */
     body.st-menu-layout-hamburger.st-custom-theme-active #sheld {
-        left: 50%;
+        left: 50% !important;
         transform: translate(-50%, -50%) !important;
         padding-left: 0 !important;
     }
