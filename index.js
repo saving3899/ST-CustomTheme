@@ -1124,6 +1124,7 @@ jQuery(async () => {
         'extensions-settings-button': '확장',
         'persona-management-button': '페르소나',
         'rightNavHolder': '캐릭터',
+        'table_database_settings_drawer': '이벤트 테이블',
     };
 
     function getMenuName(id, fallbackTitle) {
