@@ -46,6 +46,7 @@ const defaultSettings = {
     webAppNameSameAsTab: false, // Use tab title as web app name
     personaExportEnabled: false, // Persona PNG Export/Import feature
     hiddenExtensionItems: [], // List of hidden extension menu items (by text)
+    pinnedExtensionItems: [], // List of extension menu items pinned to sidebar/hamburger menu
     spellcheckEnabled: false, // Spellcheck for #send_textarea (Default: Enabled, Toggle: Disable)
     alwaysShowExtraButtons: false, // 9-1. Extract Message Action Buttons
     showDeleteButton: false, // Message Delete Button
@@ -1889,17 +1890,25 @@ jQuery(async () => {
 
             const children = Array.from(menu.children);
             const hiddenItems = stCustomThemeSettings.hiddenExtensionItems || [];
+            const pinnedItems = stCustomThemeSettings.pinnedExtensionItems || [];
 
             const listHtml = children.map(child => {
                 const text = child.innerText.trim();
                 if (!text) return '';
                 const isVisible = !hiddenItems.includes(text);
+                const isPinned = pinnedItems.includes(text);
+                const escapedText = text.replace(/"/g, '&quot;');
 
                 return `
                     <div class="st-theme-toggle-row" style="padding: 8px 10px; border-bottom: 1px solid rgba(0,0,0,0.05);">
+                        <button class="st-extension-pin-btn ${isPinned ? 'pinned' : ''}"
+                                data-text="${escapedText}"
+                                title="${isPinned ? '메뉴에서 제거' : '사이드바/햄버거 메뉴에 추가'}">
+                            <i class="fa-solid ${isPinned ? 'fa-thumbtack' : 'fa-plus'}"></i>
+                        </button>
                         <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px;" title="${text}">${text}</span>
                         <label class="st-theme-switch" style="transform: scale(0.85);">
-                            <input type="checkbox" class="st-extension-toggle" data-text="${text.replace(/"/g, '&quot;')}" ${isVisible ? 'checked' : ''}>
+                            <input type="checkbox" class="st-extension-toggle" data-text="${escapedText}" ${isVisible ? 'checked' : ''}>
                             <span class="st-theme-slider"></span>
                         </label>
                     </div>
@@ -1939,6 +1948,29 @@ jQuery(async () => {
             }
             saveSettings();
             applyExtensionVisibility();
+        });
+
+        // Pin button click event handler
+        $('#st-extension-list').on('click', '.st-extension-pin-btn', function () {
+            const text = $(this).data('text');
+
+            if (!stCustomThemeSettings.pinnedExtensionItems) {
+                stCustomThemeSettings.pinnedExtensionItems = [];
+            }
+
+            const isPinned = stCustomThemeSettings.pinnedExtensionItems.includes(text);
+
+            if (isPinned) {
+                // Remove from pinned list
+                stCustomThemeSettings.pinnedExtensionItems = stCustomThemeSettings.pinnedExtensionItems.filter(item => item !== text);
+            } else {
+                // Add to pinned list
+                stCustomThemeSettings.pinnedExtensionItems.push(text);
+            }
+
+            saveSettings();
+            renderExtensionListItems(); // Re-render to update button state
+            applyPinnedExtensionItems(); // Apply to sidebar/hamburger menu
         });
 
         // Tab switching (Main Sidebar)
@@ -3143,6 +3175,9 @@ jQuery(async () => {
                 }
             }
         });
+
+        // Apply pinned extension items after all drawers are moved
+        applyPinnedExtensionItems();
     }
 
     function restoreButtons() {
@@ -3160,6 +3195,131 @@ jQuery(async () => {
             $('#top-settings-holder').append(btn);
         });
     }
+
+    // Apply pinned extension items to sidebar and hamburger menu
+    // Positioned between extensions-settings-button and persona-management-button
+    function applyPinnedExtensionItems() {
+        const pinnedItems = stCustomThemeSettings.pinnedExtensionItems || [];
+
+        // Remove existing pinned items first (for refresh)
+        $('.st-pinned-extension-item').remove();
+
+        if (pinnedItems.length === 0) return;
+
+        // Get icon class from extension menu for each pinned item
+        const menu = document.getElementById('extensionsMenu');
+        const getIconClass = (text) => {
+            if (!menu) return 'fa-solid fa-puzzle-piece';
+
+            const matchingItem = Array.from(menu.children).find(child =>
+                child.innerText.trim() === text
+            );
+
+            if (matchingItem) {
+                // Try to find icon element - can be <i> or <div> with fa-* classes
+                let iconEl = matchingItem.querySelector('i[class*="fa-"]');
+                if (!iconEl) {
+                    // SillyTavern extensions use <div class="fa-solid fa-xxx extensionsMenuExtensionButton">
+                    iconEl = matchingItem.querySelector('div[class*="fa-"]');
+                }
+                if (!iconEl) {
+                    // Also try .extensionsMenuExtensionButton class
+                    iconEl = matchingItem.querySelector('.extensionsMenuExtensionButton');
+                }
+
+                if (iconEl && iconEl.className) {
+                    // Extract only fa-* classes (filter out other classes like extensionsMenuExtensionButton)
+                    const classes = iconEl.className.split(' ')
+                        .filter(c => c.startsWith('fa-') || c === 'fa')
+                        .join(' ');
+                    if (classes) {
+                        return classes;
+                    }
+                }
+            }
+
+            return 'fa-solid fa-puzzle-piece'; // Fallback
+        };
+
+        // === Sidebar Mode ===
+        const sidebarTopContainer = $('#st-sidebar-top-container');
+        if (sidebarTopContainer.length > 0) {
+            // Find extensions-settings-button drawer (확장)
+            const extensionsDrawer = sidebarTopContainer.find('#extensions-settings-button');
+
+            // Insert in reverse order so they appear in correct order after extensions
+            [...pinnedItems].reverse().forEach(text => {
+                const iconClass = getIconClass(text);
+                const itemHtml = `
+                    <div class="st-sidebar-item st-pinned-extension-item" data-extension-text="${text.replace(/"/g, '&quot;')}" title="${text}">
+                        <i class="${iconClass}"></i>
+                        <span class="st-sidebar-label">${text}</span>
+                    </div>
+                `;
+
+                if (extensionsDrawer.length > 0) {
+                    extensionsDrawer.after(itemHtml);
+                } else {
+                    // Fallback: append to top container
+                    sidebarTopContainer.append(itemHtml);
+                }
+            });
+        }
+
+        // === Hamburger Mode ===
+        const dropdownContent = $('#st-hamburger-dropdown-content');
+        if (dropdownContent.length > 0) {
+            // Find extensions-settings-button item (확장)
+            const extensionsItem = dropdownContent.find('[data-drawer-id="extensions-settings-button"]');
+
+            // Insert in reverse order so they appear in correct order after extensions
+            [...pinnedItems].reverse().forEach(text => {
+                const iconClass = getIconClass(text);
+                const itemHtml = `
+                    <div class="st-dropdown-item st-pinned-extension-item" data-extension-text="${text.replace(/"/g, '&quot;')}">
+                        <i class="${iconClass}"></i>
+                        <span>${text}</span>
+                    </div>
+                `;
+
+                if (extensionsItem.length > 0) {
+                    extensionsItem.after(itemHtml);
+                } else {
+                    // Fallback: append to dropdown
+                    dropdownContent.append(itemHtml);
+                }
+            });
+        }
+    }
+
+    // Click handler for pinned extension items (triggers original extension menu item)
+    $(document).on('click', '.st-pinned-extension-item', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const text = $(this).data('extension-text');
+        const menu = document.getElementById('extensionsMenu');
+
+        if (!menu) {
+            console.warn('ST-CustomTheme: extensionsMenu not found');
+            return;
+        }
+
+        // Find matching item in extensions menu by text
+        const matchingItem = Array.from(menu.children).find(child =>
+            child.innerText.trim() === text
+        );
+
+        if (matchingItem) {
+            matchingItem.click();
+            // Close hamburger dropdown if open
+            if (typeof closeHamburgerDropdown === 'function') {
+                closeHamburgerDropdown();
+            }
+        } else {
+            console.warn('ST-CustomTheme: Extension item not found:', text);
+        }
+    });
 
     function removeSidebar() {
         restoreButtons();
@@ -3462,6 +3622,9 @@ jQuery(async () => {
                 closeHamburgerDropdown();
             }
         });
+
+        // Apply pinned extension items after all drawer items are added
+        applyPinnedExtensionItems();
     }
 
     function toggleHamburgerDropdown() {

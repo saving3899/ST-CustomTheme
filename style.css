@@ -766,7 +766,7 @@ body.st-custom-sidebar-active #right-nav-toggle {
     justify-content: space-between;
     align-items: flex-start;
     padding: 20px 0;
-    z-index: 10000;
+    z-index: 9998;
     /* box-shadow: 2px 0 5px rgba(0, 0, 0, 0.02); */
     transition: width 0.2s ease;
     overflow: hidden;
@@ -3266,4 +3266,48 @@ body.st-theme-dark .st-chat-nav button i {
     margin: 0;
     padding: 0;
     overflow: hidden;
+}
+
+/* ============================================
+   Pinned Extension Items (요술봉 메뉴 바로가기)
+   ============================================ */
+
+/* Pin button in extension list */
+.st-extension-pin-btn {
+    background: transparent;
+    border: none;
+    color: var(--SmartThemeBodyColor, #888);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-right: 8px;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.st-extension-pin-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--st-theme-color, #9aa894);
+}
+
+.st-extension-pin-btn.pinned {
+    color: var(--st-theme-color, #9aa894);
+}
+
+.st-extension-pin-btn.pinned i {
+    transform: rotate(45deg);
+}
+
+/* Dark mode for pin button */
+body.st-theme-dark .st-extension-pin-btn {
+    color: #888;
+}
+
+body.st-theme-dark .st-extension-pin-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--st-theme-color, #9aa894);
+}
+
+body.st-theme-dark .st-extension-pin-btn.pinned {
+    color: var(--st-theme-color, #9aa894);
 }
