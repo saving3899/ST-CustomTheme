@@ -1896,7 +1896,10 @@ jQuery(async () => {
                 const text = child.innerText.trim();
                 if (!text) return '';
                 const isVisible = !hiddenItems.includes(text);
-                const isPinned = pinnedItems.includes(text);
+                // Handle both old string format and new object format
+                const isPinned = pinnedItems.some(item =>
+                    (typeof item === 'string' ? item : item.text) === text
+                );
                 const escapedText = text.replace(/"/g, '&quot;');
 
                 return `
@@ -1958,19 +1961,48 @@ jQuery(async () => {
                 stCustomThemeSettings.pinnedExtensionItems = [];
             }
 
-            const isPinned = stCustomThemeSettings.pinnedExtensionItems.includes(text);
+            // Check if already pinned (handle both old string format and new object format)
+            const existingIndex = stCustomThemeSettings.pinnedExtensionItems.findIndex(item =>
+                (typeof item === 'string' ? item : item.text) === text
+            );
+            const isPinned = existingIndex !== -1;
 
             if (isPinned) {
                 // Remove from pinned list
-                stCustomThemeSettings.pinnedExtensionItems = stCustomThemeSettings.pinnedExtensionItems.filter(item => item !== text);
+                stCustomThemeSettings.pinnedExtensionItems.splice(existingIndex, 1);
             } else {
-                // Add to pinned list
-                stCustomThemeSettings.pinnedExtensionItems.push(text);
+                // Get icon class from the extension menu item
+                const menu = document.getElementById('extensionsMenu');
+                let iconClass = 'fa-solid fa-puzzle-piece';
+
+                if (menu) {
+                    const matchingItem = Array.from(menu.children).find(child =>
+                        child.innerText.trim() === text
+                    );
+                    if (matchingItem) {
+                        let iconEl = matchingItem.querySelector('i[class*="fa-"]');
+                        if (!iconEl) iconEl = matchingItem.querySelector('div[class*="fa-"]');
+                        if (!iconEl) iconEl = matchingItem.querySelector('.extensionsMenuExtensionButton');
+
+                        if (iconEl && iconEl.className) {
+                            const classes = iconEl.className.split(' ')
+                                .filter(c => c.startsWith('fa-') || c === 'fa')
+                                .join(' ');
+                            if (classes) iconClass = classes;
+                        }
+                    }
+                }
+
+                // Add to pinned list with icon class
+                stCustomThemeSettings.pinnedExtensionItems.push({
+                    text: text,
+                    iconClass: iconClass
+                });
             }
 
             saveSettings();
             renderExtensionListItems(); // Re-render to update button state
-            applyPinnedExtensionItems(); // Apply to sidebar/hamburger menu
+            applyPinnedExtensionItems(true); // Apply to sidebar/hamburger menu (force refresh)
         });
 
         // Tab switching (Main Sidebar)
@@ -3198,48 +3230,34 @@ jQuery(async () => {
 
     // Apply pinned extension items to sidebar and hamburger menu
     // Positioned between extensions-settings-button and persona-management-button
-    function applyPinnedExtensionItems() {
+    function applyPinnedExtensionItems(force = false) {
         const pinnedItems = stCustomThemeSettings.pinnedExtensionItems || [];
+
+        // Create hash to check if pinned items changed
+        const currentHash = JSON.stringify(pinnedItems);
+
+        // Check if items exist in current DOM (handles layout switching)
+        const existingItems = $('.st-pinned-extension-item').length;
+        const needsRender = existingItems === 0 && pinnedItems.length > 0;
+
+        // Skip if nothing changed AND items already exist (prevents flickering)
+        if (!force && !needsRender && (currentHash === applyPinnedExtensionItems._lastHash)) {
+            return;
+        }
+        applyPinnedExtensionItems._lastHash = currentHash;
 
         // Remove existing pinned items first (for refresh)
         $('.st-pinned-extension-item').remove();
 
         if (pinnedItems.length === 0) return;
 
-        // Get icon class from extension menu for each pinned item
-        const menu = document.getElementById('extensionsMenu');
-        const getIconClass = (text) => {
-            if (!menu) return 'fa-solid fa-puzzle-piece';
-
-            const matchingItem = Array.from(menu.children).find(child =>
-                child.innerText.trim() === text
-            );
-
-            if (matchingItem) {
-                // Try to find icon element - can be <i> or <div> with fa-* classes
-                let iconEl = matchingItem.querySelector('i[class*="fa-"]');
-                if (!iconEl) {
-                    // SillyTavern extensions use <div class="fa-solid fa-xxx extensionsMenuExtensionButton">
-                    iconEl = matchingItem.querySelector('div[class*="fa-"]');
-                }
-                if (!iconEl) {
-                    // Also try .extensionsMenuExtensionButton class
-                    iconEl = matchingItem.querySelector('.extensionsMenuExtensionButton');
-                }
-
-                if (iconEl && iconEl.className) {
-                    // Extract only fa-* classes (filter out other classes like extensionsMenuExtensionButton)
-                    const classes = iconEl.className.split(' ')
-                        .filter(c => c.startsWith('fa-') || c === 'fa')
-                        .join(' ');
-                    if (classes) {
-                        return classes;
-                    }
-                }
+        // Normalize items to object format (handle both old string and new object format)
+        const normalizedItems = pinnedItems.map(item => {
+            if (typeof item === 'string') {
+                return { text: item, iconClass: 'fa-solid fa-puzzle-piece' };
             }
-
-            return 'fa-solid fa-puzzle-piece'; // Fallback
-        };
+            return item;
+        });
 
         // === Sidebar Mode ===
         const sidebarTopContainer = $('#st-sidebar-top-container');
@@ -3248,12 +3266,17 @@ jQuery(async () => {
             const extensionsDrawer = sidebarTopContainer.find('#extensions-settings-button');
 
             // Insert in reverse order so they appear in correct order after extensions
-            [...pinnedItems].reverse().forEach(text => {
-                const iconClass = getIconClass(text);
+            [...normalizedItems].reverse().forEach(item => {
+                const { text, iconClass } = item;
+                // Use same structure as st-moved-drawer for consistent styling
                 const itemHtml = `
-                    <div class="st-sidebar-item st-pinned-extension-item" data-extension-text="${text.replace(/"/g, '&quot;')}" title="${text}">
-                        <i class="${iconClass}"></i>
-                        <span class="st-sidebar-label">${text}</span>
+                    <div class="drawer st-moved-drawer st-pinned-extension-item" data-extension-text="${text.replace(/"/g, '&quot;')}">
+                        <div class="drawer-toggle">
+                            <div class="drawer-icon closedIcon" title="${text}">
+                                <i class="${iconClass}"></i>
+                            </div>
+                            <span class="st-sidebar-label">${text}</span>
+                        </div>
                     </div>
                 `;
 
@@ -3273,8 +3296,8 @@ jQuery(async () => {
             const extensionsItem = dropdownContent.find('[data-drawer-id="extensions-settings-button"]');
 
             // Insert in reverse order so they appear in correct order after extensions
-            [...pinnedItems].reverse().forEach(text => {
-                const iconClass = getIconClass(text);
+            [...normalizedItems].reverse().forEach(item => {
+                const { text, iconClass } = item;
                 const itemHtml = `
                     <div class="st-dropdown-item st-pinned-extension-item" data-extension-text="${text.replace(/"/g, '&quot;')}">
                         <i class="${iconClass}"></i>
@@ -3293,11 +3316,13 @@ jQuery(async () => {
     }
 
     // Click handler for pinned extension items (triggers original extension menu item)
-    $(document).on('click', '.st-pinned-extension-item', function (e) {
+    $(document).on('click', '.st-pinned-extension-item, .st-pinned-extension-item .drawer-toggle', function (e) {
         e.preventDefault();
         e.stopPropagation();
 
-        const text = $(this).data('extension-text');
+        // Get the parent pinned item if clicked on drawer-toggle
+        const pinnedItem = $(this).closest('.st-pinned-extension-item');
+        const text = pinnedItem.data('extension-text');
         const menu = document.getElementById('extensionsMenu');
 
         if (!menu) {
@@ -3615,8 +3640,26 @@ jQuery(async () => {
         $(document).off('click.hamburgerDropdown').on('click.hamburgerDropdown', '#st-hamburger-dropdown-content .st-dropdown-item', function (e) {
             e.preventDefault();
             e.stopPropagation();
-            const drawerId = $(this).data('drawer-id');
 
+            // Check if this is a pinned extension item
+            if ($(this).hasClass('st-pinned-extension-item')) {
+                const text = $(this).data('extension-text');
+                const menu = document.getElementById('extensionsMenu');
+
+                if (menu) {
+                    const matchingItem = Array.from(menu.children).find(child =>
+                        child.innerText.trim() === text
+                    );
+                    if (matchingItem) {
+                        matchingItem.click();
+                    }
+                }
+                closeHamburgerDropdown();
+                return;
+            }
+
+            // Regular drawer item
+            const drawerId = $(this).data('drawer-id');
             if (drawerId) {
                 openDrawerById(drawerId);
                 closeHamburgerDropdown();
