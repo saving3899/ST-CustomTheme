@@ -3400,8 +3400,8 @@ body #st-custom-sidebar .st-moved-drawer.st-pinned-extension-item .drawer-toggle
     opacity: 1 !important;
 }
 
-body.st-theme-dark #st-custom-sidebar .st-moved-drawer .drawer-toggle:has(.openIcon) .drawer-icon,
-body.st-theme-dark #st-custom-sidebar .st-moved-drawer .drawer-toggle:has(.openIcon) .drawer-icon i {
+body.st-theme-dark #st-custom-sidebar .st-moved-drawer.st-pinned-extension-item .drawer-toggle:has(.openIcon) .drawer-icon,
+body.st-theme-dark #st-custom-sidebar .st-moved-drawer.st-pinned-extension-item .drawer-toggle:has(.openIcon) .drawer-icon i {
     color: #fff !important;
 }
 
