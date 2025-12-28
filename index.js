@@ -670,7 +670,96 @@ jQuery(async () => {
     }
 
     // Track applied settings to avoid redundant processing
+
     let lastAppliedIconSettings = '';
+
+    // Helper: Upload file to server using SillyTavern's file API
+    async function uploadFileToServer(filename, base64Data) {
+        try {
+            // Remove data URL prefix if present
+            const cleanBase64 = base64Data.replace(/^data:[^;]+;base64,/, '');
+
+            // Get proper headers with CSRF token from SillyTavern
+            const context = SillyTavern.getContext();
+            const headers = context.getRequestHeaders ? context.getRequestHeaders() : {
+                'Content-Type': 'application/json',
+            };
+
+            const response = await fetch('/api/files/upload', {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({
+                    name: filename,
+                    data: cleanBase64
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Upload failed: ${response.status}`);
+            }
+
+            const result = await response.json();
+            return result.path; // Returns path like "/user/files/filename"
+        } catch (e) {
+            console.error('ST-CustomTheme: Failed to upload file', e);
+            return null;
+        }
+    }
+
+
+    // Helper: Convert base64 image to different sizes and upload
+    async function uploadIconFiles(base64Icon) {
+        const sizes = [192, 512];
+        const uploadedPaths = {};
+
+        for (const size of sizes) {
+            try {
+                // Create canvas to resize
+                const img = new Image();
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = reject;
+                    img.src = base64Icon;
+                });
+
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+
+                // Cover resize (center crop)
+                const scale = Math.max(size / img.width, size / img.height);
+                const x = (size / 2) - (img.width / 2) * scale;
+                const y = (size / 2) - (img.height / 2) * scale;
+                ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+
+                const resizedBase64 = canvas.toDataURL('image/png');
+                const filename = `webapp-icon-${size}.png`;
+                const uploadedPath = await uploadFileToServer(filename, resizedBase64);
+
+                if (uploadedPath) {
+                    uploadedPaths[size] = uploadedPath;
+                }
+            } catch (e) {
+                console.error(`ST-CustomTheme: Failed to resize/upload ${size}px icon`, e);
+            }
+        }
+
+        return uploadedPaths;
+    }
+
+    // Helper: Save manifest file to server
+    async function saveManifestFile(manifestContent) {
+        try {
+            const manifestJson = JSON.stringify(manifestContent, null, 2);
+            const base64Manifest = btoa(unescape(encodeURIComponent(manifestJson)));
+            const uploadedPath = await uploadFileToServer('custom-manifest.json', base64Manifest);
+            return uploadedPath;
+        } catch (e) {
+            console.error('ST-CustomTheme: Failed to save manifest file', e);
+            return null;
+        }
+    }
 
     // Apply Favicon, WebApp Icons, and Tab Title
     async function applyIconSettings() {
@@ -720,7 +809,7 @@ jQuery(async () => {
         linkApple.href = webAppIcon || 'img/apple-icon-192x192.png';
         document.head.appendChild(linkApple);
 
-        // 3. Dynamic Manifest (Android)
+        // 3. Dynamic Manifest (Android) - Using File-based approach for PWA compatibility
         // Determine web app name
         const webAppName = stCustomThemeSettings.webAppNameSameAsTab
             ? (tabTitle || null)
@@ -744,14 +833,26 @@ jQuery(async () => {
 
                 // Replace icons if custom icon provided
                 if (webAppIcon) {
-                    const absoluteIconUrl = resolveUrl(webAppIcon);
-                    manifest.icons = [
-                        { src: absoluteIconUrl, sizes: "192x192", type: "image/png" },
-                        { src: absoluteIconUrl, sizes: "512x512", type: "image/png" }
-                    ];
+                    // Upload icon files to server for PWA compatibility
+                    const uploadedIcons = await uploadIconFiles(webAppIcon);
+
+                    if (uploadedIcons[192] && uploadedIcons[512]) {
+                        // Use file-based icons (PWA compatible)
+                        manifest.icons = [
+                            { src: resolveUrl(uploadedIcons[192]), sizes: "192x192", type: "image/png" },
+                            { src: resolveUrl(uploadedIcons[512]), sizes: "512x512", type: "image/png" }
+                        ];
+                    } else {
+                        // Fallback: Use base64 icon directly (may not work for PWA install)
+                        console.warn('ST-CustomTheme: Could not upload icon files, using base64 fallback');
+                        const absoluteIconUrl = resolveUrl(webAppIcon);
+                        manifest.icons = [
+                            { src: absoluteIconUrl, sizes: "192x192", type: "image/png" },
+                            { src: absoluteIconUrl, sizes: "512x512", type: "image/png" }
+                        ];
+                    }
                 } else if (manifest.icons) {
                     // Even if not replacing, we must ensure existing relative paths are absolute
-                    // because Blob URL changes the base context
                     manifest.icons = manifest.icons.map(icon => ({
                         ...icon,
                         src: resolveUrl(icon.src)
@@ -764,24 +865,43 @@ jQuery(async () => {
                     manifest.short_name = webAppName;
                 }
 
-                // IMPORTANT: Fix start_url and other relative paths
-                // Blob URLs break relative paths, so we must make them absolute
+                // Ensure start_url is absolute
                 if (manifest.start_url) {
                     manifest.start_url = resolveUrl(manifest.start_url);
                 }
 
-                const stringManifest = JSON.stringify(manifest);
-                const blob = new Blob([stringManifest], { type: 'application/json' });
-                const manifestURL = URL.createObjectURL(blob);
+                // Try to save manifest as a file first (PWA compatible)
+                const manifestPath = await saveManifestFile(manifest);
 
                 let linkManifest = document.querySelector("link[rel='manifest']");
-                if (linkManifest) {
-                    linkManifest.href = manifestURL;
+
+                if (manifestPath) {
+                    // Use file-based manifest (PWA install will work!)
+                    const absoluteManifestUrl = resolveUrl(manifestPath);
+                    if (linkManifest) {
+                        linkManifest.href = absoluteManifestUrl;
+                    } else {
+                        linkManifest = document.createElement('link');
+                        linkManifest.rel = 'manifest';
+                        linkManifest.href = absoluteManifestUrl;
+                        document.head.appendChild(linkManifest);
+                    }
+                    console.info('ST-CustomTheme: Using file-based manifest for PWA compatibility');
                 } else {
-                    linkManifest = document.createElement('link');
-                    linkManifest.rel = 'manifest';
-                    linkManifest.href = manifestURL;
-                    document.head.appendChild(linkManifest);
+                    // Fallback: Use Blob URL (PWA install may not work, but icons will show)
+                    console.warn('ST-CustomTheme: Could not save manifest file, using Blob URL fallback');
+                    const stringManifest = JSON.stringify(manifest);
+                    const blob = new Blob([stringManifest], { type: 'application/json' });
+                    const manifestURL = URL.createObjectURL(blob);
+
+                    if (linkManifest) {
+                        linkManifest.href = manifestURL;
+                    } else {
+                        linkManifest = document.createElement('link');
+                        linkManifest.rel = 'manifest';
+                        linkManifest.href = manifestURL;
+                        document.head.appendChild(linkManifest);
+                    }
                 }
             } catch (e) {
                 console.error('ST-CustomTheme: Failed to apply dynamic manifest', e);
@@ -792,6 +912,7 @@ jQuery(async () => {
             if (linkManifest && !webAppName) linkManifest.href = 'manifest.json';
         }
     }
+
 
     // --- Extension Menu Visibility Control ---
     let spellcheckObserver = null;
