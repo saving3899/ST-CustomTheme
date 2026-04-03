@@ -1271,7 +1271,7 @@ body.st-custom-theme-active #send_form #rightSendForm>div:not(.mes_send) {
     }
 }
 
-body.st-custom-theme-active #send_form #qr--bar {
+/* body.st-custom-theme-active #send_form #qr--bar {
     justify-content: center !important;
     width: 100% !important;
     flex-direction: column;
@@ -1283,7 +1283,7 @@ body.st-custom-theme-active #send_form #qr--popout>.qr--body>.qr--buttons.qr--co
     height: auto !important;
     justify-content: center;
     width: 100% !important
-}
+} */
 
 
 body.st-custom-theme-active #send_form #qr--bar .interactable,

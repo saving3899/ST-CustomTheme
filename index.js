@@ -51,7 +51,10 @@ const defaultSettings = {
     alwaysShowExtraButtons: false, // 9-1. Extract Message Action Buttons
     showDeleteButton: false, // Message Delete Button
     chatNavEnabled: true, // 10. Chat Navigation Buttons
-    chatNavPosition: 'bottom-center' // 'bottom-right', 'top-right', 'bottom-left', 'top-left', 'bottom-center', 'top-center'
+    chatNavPosition: 'bottom-center', // 'bottom-right', 'top-right', 'bottom-left', 'top-left', 'bottom-center', 'top-center'
+    qrBarLayout: 'default', // 'default', 'horizontal', 'vertical'
+    qrBarDragScroll: false, // Mouse drag scroll for QR bar
+    qrBarWheelScroll: false // Mouse wheel horizontal scroll for QR bar
 };
 
 // 설정 객체 참조 (초기화 후 SillyTavern.getContext().extensionSettings에서 가져옴)
@@ -324,7 +327,10 @@ jQuery(async () => {
             darkMode: stCustomThemeSettings.darkMode,
             sendTextareaPlaceholder: stCustomThemeSettings.sendTextareaPlaceholder,
             alwaysShowExtraButtons: stCustomThemeSettings.alwaysShowExtraButtons,
-            showDeleteButton: stCustomThemeSettings.showDeleteButton
+            showDeleteButton: stCustomThemeSettings.showDeleteButton,
+            qrBarLayout: stCustomThemeSettings.qrBarLayout,
+            qrBarDragScroll: stCustomThemeSettings.qrBarDragScroll,
+            qrBarWheelScroll: stCustomThemeSettings.qrBarWheelScroll
         });
 
         // Skip regeneration if settings unchanged
@@ -490,7 +496,72 @@ jQuery(async () => {
             }
         \n`;
 
+        // QR Bar Layout
+        if (stCustomThemeSettings.qrBarLayout === 'horizontal') {
+            css += `
+                body.st-custom-theme-active #send_form #qr--bar {
+                    flex-direction: row !important;
+                    flex-wrap: nowrap !important;
+                    overflow-x: auto !important;
+                    justify-content: flex-start !important;
+                }
+                body.st-custom-theme-active #send_form #qr--bar>.qr--buttons.qr--color,
+                body.st-custom-theme-active #send_form #qr--popout>.qr--body>.qr--buttons.qr--color {
+                    width: auto !important;
+                    flex-shrink: 0 !important;
+                }
+                body.st-custom-theme-active #send_form #qr--bar>.qr--buttons {
+                    display: inline-flex !important;
+                    flex-direction: row !important;
+                    flex-wrap: nowrap !important;
+                    flex-shrink: 0 !important;
+                }
+            \n`;
+        } else if (stCustomThemeSettings.qrBarLayout === 'vertical') {
+            css += `
+                body.st-custom-theme-active #send_form #qr--bar {
+                    flex-direction: column !important;
+                }
+                body.st-custom-theme-active #send_form #qr--bar>.qr--buttons.qr--color,
+                body.st-custom-theme-active #send_form #qr--popout>.qr--body>.qr--buttons.qr--color {
+                    width: 100% !important;
+                }
+                body.st-custom-theme-active #send_form #qr--bar>.qr--buttons.qr--color.st-qr-overflow,
+                body.st-custom-theme-active #send_form #qr--popout>.qr--body>.qr--buttons.qr--color.st-qr-overflow {
+                    justify-content: flex-start !important;
+                    overflow-x: auto !important;
+                }
+                body.st-custom-theme-active #send_form #qr--bar>.qr--buttons.qr--color:not(.st-qr-overflow),
+                body.st-custom-theme-active #send_form #qr--popout>.qr--body>.qr--buttons.qr--color:not(.st-qr-overflow) {
+                    justify-content: center !important;
+                    overflow-x: hidden !important;
+                }
+                body.st-custom-theme-active #form_sheld:hover #qr--bar {
+                    max-height: fit-content !important;
+                    overflow-x: hidden !important;
+                }
+                body.st-custom-theme-active #send_form #qr--bar>.qr--buttons {
+                    display: inline-flex !important;
+                    flex-direction: row !important;
+                    flex-wrap: nowrap !important;
+                }
+                @media (hover: none) and (pointer: coarse) {
+                    body.st-custom-theme-active #send_form #qr--bar {
+                        max-height: none !important;
+                    }
+                }
+            \n`;
+        }
+
         dynamicStyleEl.textContent = css;
+
+        // QR bar vertical layout: measure overflow and apply classes
+        if (stCustomThemeSettings.qrBarLayout === 'vertical') {
+            requestAnimationFrame(() => updateQrBarOverflowClasses());
+        } else {
+            // Remove overflow classes when not in vertical mode
+            document.querySelectorAll('.qr--buttons.qr--color.st-qr-overflow').forEach(el => el.classList.remove('st-qr-overflow'));
+        }
 
         // Send textarea placeholder
         const sendTextarea = document.getElementById('send_textarea');
@@ -1884,6 +1955,40 @@ jQuery(async () => {
                         <div class="st-theme-divider"></div>
 
                         <div class="st-theme-setting-row">
+                            <label for="st-qr-bar-layout">QR바 정렬</label>
+                            <select id="st-qr-bar-layout">
+                                <option value="default" ${stCustomThemeSettings.qrBarLayout === 'default' ? 'selected' : ''}>테마 기본값</option>
+                                <option value="horizontal" ${stCustomThemeSettings.qrBarLayout === 'horizontal' ? 'selected' : ''}>좌우 스크롤</option>
+                                <option value="vertical" ${stCustomThemeSettings.qrBarLayout === 'vertical' ? 'selected' : ''}>상하 정렬</option>
+                            </select>
+                        </div>
+                        <p class="st-theme-muted">퀵 리플라이(QR) 바의 버튼 정렬 방식을 설정합니다.</p>
+
+                        <div class="st-theme-setting-row" id="st-qr-drag-scroll-container" style="${stCustomThemeSettings.qrBarLayout === 'default' ? 'display:none;' : ''}">
+                            <div class="st-theme-toggle-row">
+                                <span>QR바 마우스 드래그 스크롤</span>
+                                <label class="st-theme-switch">
+                                    <input type="checkbox" id="st-qr-drag-scroll" ${stCustomThemeSettings.qrBarDragScroll ? 'checked' : ''}>
+                                    <span class="st-theme-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <p class="st-theme-muted" id="st-qr-drag-scroll-desc" style="${stCustomThemeSettings.qrBarLayout === 'default' ? 'display:none;' : ''}">PC에서 마우스로 QR바를 드래그하여 스크롤할 수 있습니다.</p>
+
+                        <div class="st-theme-setting-row" id="st-qr-wheel-scroll-container" style="${stCustomThemeSettings.qrBarLayout === 'default' ? 'display:none;' : ''}">
+                            <div class="st-theme-toggle-row">
+                                <span>QR바 마우스 휠 스크롤</span>
+                                <label class="st-theme-switch">
+                                    <input type="checkbox" id="st-qr-wheel-scroll" ${stCustomThemeSettings.qrBarWheelScroll ? 'checked' : ''}>
+                                    <span class="st-theme-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <p class="st-theme-muted" id="st-qr-wheel-scroll-desc" style="${stCustomThemeSettings.qrBarLayout === 'default' ? 'display:none;' : ''}">마우스 휠을 굴려 QR바를 좌우로 스크롤할 수 있습니다.</p>
+
+                        <div class="st-theme-divider"></div>
+
+                        <div class="st-theme-setting-row">
                             <div class="st-theme-toggle-row">
                                 <span>채팅 내비게이션 버튼</span>
                                 <label class="st-theme-switch">
@@ -2628,6 +2733,37 @@ jQuery(async () => {
         $('#st-show-delete-button').on('change', function () {
             stCustomThemeSettings.showDeleteButton = $(this).is(':checked');
             saveSettings();
+        });
+
+        // QR Bar Layout
+        $('#st-qr-bar-layout').on('change', function () {
+            stCustomThemeSettings.qrBarLayout = $(this).val();
+            saveSettings();
+            requestAnimationFrame(() => updateQrBarOverflowClasses());
+            // Show/hide drag scroll option
+            if (stCustomThemeSettings.qrBarLayout === 'default') {
+                $('#st-qr-drag-scroll-container, #st-qr-drag-scroll-desc').slideUp(200);
+                $('#st-qr-wheel-scroll-container, #st-qr-wheel-scroll-desc').slideUp(200);
+            } else {
+                $('#st-qr-drag-scroll-container, #st-qr-drag-scroll-desc').slideDown(200);
+                $('#st-qr-wheel-scroll-container, #st-qr-wheel-scroll-desc').slideDown(200);
+            }
+            applyQrBarDragScroll();
+            applyQrBarWheelScroll();
+        });
+
+        // QR Bar Drag Scroll
+        $('#st-qr-drag-scroll').on('change', function () {
+            stCustomThemeSettings.qrBarDragScroll = $(this).is(':checked');
+            saveSettings();
+            applyQrBarDragScroll();
+        });
+
+        // QR Bar Wheel Scroll
+        $('#st-qr-wheel-scroll').on('change', function () {
+            stCustomThemeSettings.qrBarWheelScroll = $(this).is(':checked');
+            saveSettings();
+            applyQrBarWheelScroll();
         });
 
         // Chat Nav Settings
@@ -4151,6 +4287,209 @@ jQuery(async () => {
     // Initialize Chat Nav Buttons
     addChatNavButtons();
 });
+
+
+// QR Bar overflow detection for vertical layout
+function updateQrBarOverflowClasses() {
+    const buttons = document.querySelectorAll('#send_form #qr--bar > .qr--buttons.qr--color, #send_form #qr--popout > .qr--body > .qr--buttons.qr--color');
+    buttons.forEach(el => {
+        if (el.scrollWidth > el.clientWidth) {
+            el.classList.add('st-qr-overflow');
+        } else {
+            el.classList.remove('st-qr-overflow');
+        }
+    });
+    // Refresh drag scroll bindings after overflow state changes
+    applyQrBarDragScroll();
+    applyQrBarWheelScroll();
+}
+
+// Observe QR bar for dynamic changes (buttons added/removed)
+const qrBarObserver = new MutationObserver(() => {
+    if (stCustomThemeSettings.qrBarLayout === 'vertical') {
+        requestAnimationFrame(() => updateQrBarOverflowClasses());
+    }
+});
+
+function observeQrBar() {
+    const qrBar = document.querySelector('#send_form #qr--bar');
+    if (qrBar) {
+        qrBarObserver.observe(qrBar, { childList: true, subtree: true });
+    }
+}
+
+// Start observing when DOM is ready and re-observe on layout changes
+$(document).ready(() => {
+    observeQrBar();
+    applyQrBarDragScroll();
+    applyQrBarWheelScroll();
+    // Fallback: re-check periodically in case QR bar is created later
+    const qrBarCheckInterval = setInterval(() => {
+        if (document.querySelector('#send_form #qr--bar')) {
+            observeQrBar();
+            if (stCustomThemeSettings.qrBarLayout === 'vertical') {
+                updateQrBarOverflowClasses();
+            }
+            applyQrBarDragScroll();
+            applyQrBarWheelScroll();
+            clearInterval(qrBarCheckInterval);
+        }
+    }, 2000);
+});
+
+// Also update on window resize
+window.addEventListener('resize', () => {
+    if (stCustomThemeSettings.qrBarLayout === 'vertical') {
+        requestAnimationFrame(() => updateQrBarOverflowClasses());
+    }
+});
+
+// QR Bar Mouse Drag Scroll
+const qrDragState = new WeakMap();
+
+function addDragScroll(el) {
+    if (qrDragState.has(el)) return;
+    const DRAG_THRESHOLD = 5; // px moved before treating as drag
+    const state = { isDown: false, isDragging: false, startX: 0, scrollLeft: 0 };
+
+    const onClick = (e) => {
+        // If we were dragging, suppress the click on the button
+        if (state.isDragging) {
+            e.preventDefault();
+            e.stopPropagation();
+            state.isDragging = false;
+        }
+    };
+
+    const onMouseDown = (e) => {
+        if (e.button !== 0) return; // left click only
+        state.isDown = true;
+        state.isDragging = false;
+        state.startX = e.pageX - el.offsetLeft;
+        state.scrollLeft = el.scrollLeft;
+    };
+    const onMouseLeave = () => {
+        if (!state.isDown) return;
+        state.isDown = false;
+        if (state.isDragging) {
+            el.style.cursor = 'grab';
+            el.style.userSelect = '';
+        }
+    };
+    const onMouseUp = () => {
+        if (!state.isDown) return;
+        state.isDown = false;
+        if (state.isDragging) {
+            el.style.cursor = 'grab';
+            el.style.userSelect = '';
+            // isDragging stays true briefly so onClick can suppress button click
+        }
+    };
+    const onMouseMove = (e) => {
+        if (!state.isDown) return;
+        const x = e.pageX - el.offsetLeft;
+        const diff = Math.abs(x - state.startX);
+        if (!state.isDragging && diff >= DRAG_THRESHOLD) {
+            state.isDragging = true;
+            el.style.cursor = 'grabbing';
+            el.style.userSelect = 'none';
+        }
+        if (state.isDragging) {
+            e.preventDefault();
+            const walk = (x - state.startX) * 1.5;
+            el.scrollLeft = state.scrollLeft - walk;
+        }
+    };
+    el.addEventListener('click', onClick, true);
+    el.addEventListener('mousedown', onMouseDown);
+    el.addEventListener('mouseleave', onMouseLeave);
+    el.addEventListener('mouseup', onMouseUp);
+    el.addEventListener('mousemove', onMouseMove);
+    el.style.cursor = 'grab';
+    qrDragState.set(el, { onClick, onMouseDown, onMouseLeave, onMouseUp, onMouseMove });
+}
+
+function removeDragScroll(el) {
+    const handlers = qrDragState.get(el);
+    if (!handlers) return;
+    el.removeEventListener('click', handlers.onClick, true);
+    el.removeEventListener('mousedown', handlers.onMouseDown);
+    el.removeEventListener('mouseleave', handlers.onMouseLeave);
+    el.removeEventListener('mouseup', handlers.onMouseUp);
+    el.removeEventListener('mousemove', handlers.onMouseMove);
+    el.style.cursor = '';
+    el.style.userSelect = '';
+    qrDragState.delete(el);
+}
+
+// QR Bar Mouse Wheel Scroll
+const qrWheelState = new WeakMap();
+
+function addWheelScroll(el) {
+    if (qrWheelState.has(el)) return;
+    const onWheel = (e) => {
+        if (el.scrollWidth <= el.clientWidth) return;
+        e.preventDefault();
+        el.scrollLeft += e.deltaY;
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    qrWheelState.set(el, onWheel);
+}
+
+function removeWheelScroll(el) {
+    const handler = qrWheelState.get(el);
+    if (!handler) return;
+    el.removeEventListener('wheel', handler);
+    qrWheelState.delete(el);
+}
+
+function applyQrBarDragScroll() {
+    const layout = stCustomThemeSettings.qrBarLayout;
+    const enabled = stCustomThemeSettings.qrBarDragScroll;
+
+    // For horizontal: apply to the qr--bar itself
+    if (layout === 'horizontal' && enabled) {
+        const qrBar = document.querySelector('#send_form #qr--bar');
+        if (qrBar) addDragScroll(qrBar);
+    } else {
+        const qrBar = document.querySelector('#send_form #qr--bar');
+        if (qrBar) removeDragScroll(qrBar);
+    }
+
+    // For vertical: apply to overflow button groups
+    const buttonGroups = document.querySelectorAll('#send_form #qr--bar > .qr--buttons.qr--color, #send_form #qr--popout > .qr--body > .qr--buttons.qr--color');
+    buttonGroups.forEach(el => {
+        if (layout === 'vertical' && enabled && el.classList.contains('st-qr-overflow')) {
+            addDragScroll(el);
+        } else {
+            removeDragScroll(el);
+        }
+    });
+}
+
+function applyQrBarWheelScroll() {
+    const layout = stCustomThemeSettings.qrBarLayout;
+    const enabled = stCustomThemeSettings.qrBarWheelScroll;
+
+    // For horizontal: apply to the qr--bar itself
+    if (layout === 'horizontal' && enabled) {
+        const qrBar = document.querySelector('#send_form #qr--bar');
+        if (qrBar) addWheelScroll(qrBar);
+    } else {
+        const qrBar = document.querySelector('#send_form #qr--bar');
+        if (qrBar) removeWheelScroll(qrBar);
+    }
+
+    // For vertical: apply to overflow button groups
+    const buttonGroups = document.querySelectorAll('#send_form #qr--bar > .qr--buttons.qr--color, #send_form #qr--popout > .qr--body > .qr--buttons.qr--color');
+    buttonGroups.forEach(el => {
+        if (layout === 'vertical' && enabled && el.classList.contains('st-qr-overflow')) {
+            addWheelScroll(el);
+        } else {
+            removeWheelScroll(el);
+        }
+    });
+}
 
 
 // 9. 채팅 내비게이션 버튼 추가 (Chat Navigation Buttons)
