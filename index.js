@@ -31,6 +31,7 @@ const defaultSettings = {
     mesTextLineHeight: '',
     customFonts: [],
     darkMode: false,
+    themeMode: 'light', // 'light' | 'dark' | 'auto'
     hoverColor: '#9aa894',
     hiddenButtons: [],
     sendTextareaPlaceholder: '',
@@ -214,6 +215,13 @@ function initSettings() {
         }
     }
 
+    // darkMode → themeMode 마이그레이션
+    const s = context.extensionSettings[extensionName];
+    if (!s.themeMode) {
+        s.themeMode = s.darkMode ? 'dark' : 'light';
+        shouldSave = true;
+    }
+
     // 설정 참조 업데이트
     stCustomThemeSettings = context.extensionSettings[extensionName];
 
@@ -322,8 +330,7 @@ jQuery(async () => {
             mesTextLineHeightInherit: stCustomThemeSettings.mesTextLineHeightInherit,
             customFonts: stCustomThemeSettings.customFonts.map(f => f.name),
             hoverColor: stCustomThemeSettings.hoverColor,
-            darkMode: stCustomThemeSettings.darkMode,
-            hoverColor: stCustomThemeSettings.hoverColor,
+            themeMode: stCustomThemeSettings.themeMode,
             darkMode: stCustomThemeSettings.darkMode,
             sendTextareaPlaceholder: stCustomThemeSettings.sendTextareaPlaceholder,
             alwaysShowExtraButtons: stCustomThemeSettings.alwaysShowExtraButtons,
@@ -575,11 +582,13 @@ jQuery(async () => {
             }
         }
 
-        // Dark mode class on body
-        if (stCustomThemeSettings.darkMode) {
+        // Theme mode class on body
+        $('body').removeClass('st-theme-dark st-theme-auto');
+        const themeMode = stCustomThemeSettings.themeMode || 'light';
+        if (themeMode === 'dark') {
             $('body').addClass('st-theme-dark');
-        } else {
-            $('body').removeClass('st-theme-dark');
+        } else if (themeMode === 'auto') {
+            $('body').addClass('st-theme-auto');
         }
 
         // Apply menu layout and panel style classes
@@ -1721,11 +1730,14 @@ jQuery(async () => {
                         <div class="st-theme-setting-row">
                             <label>테마 모드</label>
                             <div class="st-theme-toggle-group">
-                                <button class="st-theme-mode-btn ${!stCustomThemeSettings.darkMode ? 'active' : ''}" data-mode="light">
+                                <button class="st-theme-mode-btn ${(stCustomThemeSettings.themeMode || 'light') === 'light' ? 'active' : ''}" data-mode="light">
                                     <i class="fa-solid fa-sun"></i> 라이트
                                 </button>
-                                <button class="st-theme-mode-btn ${stCustomThemeSettings.darkMode ? 'active' : ''}" data-mode="dark">
+                                <button class="st-theme-mode-btn ${stCustomThemeSettings.themeMode === 'dark' ? 'active' : ''}" data-mode="dark">
                                     <i class="fa-solid fa-moon"></i> 다크
+                                </button>
+                                <button class="st-theme-mode-btn ${stCustomThemeSettings.themeMode === 'auto' ? 'active' : ''}" data-mode="auto">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> 적응형
                                 </button>
                             </div>
                         </div>
@@ -1803,6 +1815,7 @@ jQuery(async () => {
                                     <select id="st-menu-layout-style-pc">
                                         <option value="sidebar" ${stCustomThemeSettings.menuLayoutStylePC === 'sidebar' ? 'selected' : ''}>사이드바</option>
                                         <option value="hamburger" ${stCustomThemeSettings.menuLayoutStylePC === 'hamburger' ? 'selected' : ''}>햄버거 메뉴</option>
+                                        <option value="topbar" ${stCustomThemeSettings.menuLayoutStylePC === 'topbar' ? 'selected' : ''}>기본 상단바</option>
                                     </select>
                                 </div>
                                 <div>
@@ -1810,6 +1823,7 @@ jQuery(async () => {
                                     <select id="st-menu-layout-style-mobile">
                                         <option value="sidebar" ${stCustomThemeSettings.menuLayoutStyleMobile === 'sidebar' ? 'selected' : ''}>사이드바</option>
                                         <option value="hamburger" ${stCustomThemeSettings.menuLayoutStyleMobile === 'hamburger' ? 'selected' : ''}>햄버거 메뉴</option>
+                                        <option value="topbar" ${stCustomThemeSettings.menuLayoutStyleMobile === 'topbar' ? 'selected' : ''}>기본 상단바</option>
                                     </select>
                                 </div>
                             </div>
@@ -2672,6 +2686,7 @@ jQuery(async () => {
         // Dark/Light mode
         $('.st-theme-mode-btn').on('click', function () {
             const mode = $(this).data('mode');
+            stCustomThemeSettings.themeMode = mode;
             stCustomThemeSettings.darkMode = (mode === 'dark');
             $('.st-theme-mode-btn').removeClass('active');
             $(this).addClass('active');
@@ -2844,6 +2859,8 @@ jQuery(async () => {
             const mobile = isMobileView();
             const currentLayout = mobile ? stCustomThemeSettings.menuLayoutStyleMobile : stCustomThemeSettings.menuLayoutStylePC;
             const isHamburger = currentLayout === 'hamburger';
+            const isTopbar = currentLayout === 'topbar';
+            const isNotSidebar = isHamburger || isTopbar;
 
             // 1. Right Nav Toggle (Character Management)
             const rightNavToggle = $('#st-button-toggles input[data-btn-id="rightNavHolder"]');
@@ -2851,14 +2868,19 @@ jQuery(async () => {
 
             if (isHamburger) {
                 // Hamburger Mode: Always ON (Checked) and Disabled
-                rightNavToggle.prop('checked', true); // Force checked
+                rightNavToggle.prop('checked', true);
                 rightNavToggle.prop('disabled', true);
                 rightNavRow.css('opacity', '0.5');
                 rightNavRow.attr('title', '햄버거 메뉴에서는 캐릭터 관리가 별도로 표시되므로 비활성화됩니다.');
+            } else if (isTopbar) {
+                // Topbar Mode: Button toggles not applicable (native topbar)
+                rightNavToggle.prop('disabled', true);
+                rightNavRow.css('opacity', '0.5');
+                rightNavRow.attr('title', '기본 상단바에서는 버튼 표시 설정을 사용할 수 없습니다.');
             } else {
-                // Other Modes: Restore state from settings
+                // Sidebar Mode: Restore state from settings
                 const isHidden = stCustomThemeSettings.hiddenButtons.includes('rightNavHolder');
-                rightNavToggle.prop('checked', !isHidden); // Restore original state
+                rightNavToggle.prop('checked', !isHidden);
                 rightNavToggle.prop('disabled', false);
                 rightNavRow.css('opacity', '1');
                 rightNavRow.removeAttr('title');
@@ -2868,18 +2890,45 @@ jQuery(async () => {
             const clickOutsideToggle = $('#st-prevent-click-outside');
             const clickOutsideRow = clickOutsideToggle.closest('.st-theme-toggle-row');
 
-            if (isHamburger) {
-                // Hamburger Mode: Always OFF and Disabled
+            if (isNotSidebar) {
+                // Hamburger/Topbar Mode: Always OFF and Disabled
                 clickOutsideToggle.prop('checked', false);
                 clickOutsideToggle.prop('disabled', true);
                 clickOutsideRow.css('opacity', '0.5');
-                clickOutsideRow.attr('title', '햄버거 메뉴에서는 이 기능을 사용할 수 없습니다.');
+                clickOutsideRow.attr('title', isTopbar ? '기본 상단바에서는 이 기능을 사용할 수 없습니다.' : '햄버거 메뉴에서는 이 기능을 사용할 수 없습니다.');
             } else {
-                // Other Modes: Restore state from settings
+                // Sidebar Mode: Restore state from settings
                 clickOutsideToggle.prop('checked', stCustomThemeSettings.preventClickOutsideClose);
                 clickOutsideToggle.prop('disabled', false);
                 clickOutsideRow.css('opacity', '1');
                 clickOutsideRow.removeAttr('title');
+            }
+
+            // 3. Button toggles (topbar mode: all disabled — native topbar manages buttons)
+            if (isTopbar) {
+                $('#st-button-toggles input[type="checkbox"]').each(function () {
+                    $(this).prop('disabled', true);
+                    $(this).closest('.st-theme-toggle-row').css('opacity', '0.5')
+                        .attr('title', '기본 상단바에서는 버튼 표시 설정을 사용할 수 없습니다.');
+                });
+            } else if (!isHamburger) {
+                // Sidebar mode: restore all except rightNavHolder (already handled above)
+                $('#st-button-toggles input[type="checkbox"]').each(function () {
+                    const btnId = $(this).data('btn-id');
+                    if (btnId === 'rightNavHolder') return; // Already handled
+                    $(this).prop('disabled', false);
+                    $(this).closest('.st-theme-toggle-row').css('opacity', '1')
+                        .removeAttr('title');
+                });
+            }
+
+            // 4. Extension pin buttons (topbar mode: hide pin UI)
+            if (isTopbar) {
+                $('#st-extension-list .st-extension-pin-btn').css({ opacity: '0.3', pointerEvents: 'none' });
+                $('#st-extension-list').attr('title', '기본 상단바에서는 요술봉 메뉴 바로가기를 사용할 수 없습니다.');
+            } else {
+                $('#st-extension-list .st-extension-pin-btn').css({ opacity: '', pointerEvents: '' });
+                $('#st-extension-list').removeAttr('title');
             }
         }
 
@@ -3173,7 +3222,7 @@ jQuery(async () => {
                 customCSSBlock.after(`
                     <span id="st-custom-theme-info" class="st-theme-info-text">
                         <i class="fa-solid fa-info-circle"></i>
-                        현재 커스텀 테마 확장을 사용 중입니다. <code>body.st-theme-dark</code>로 다크모드 CSS 설정이 가능합니다.
+                        현재 커스텀 테마 확장을 사용 중입니다. <code>body.st-theme-dark</code> / <code>body.st-theme-auto</code>로 테마별 CSS 설정이 가능합니다.
                     </span>
                 `);
             }
@@ -3207,15 +3256,45 @@ jQuery(async () => {
                 if (menuLayout === 'hamburger') {
                     // 햄버거 메뉴 모드
                     $('body').addClass('st-menu-layout-hamburger');
-                    $('body').removeClass('st-custom-sidebar-active');
+                    $('body').removeClass('st-custom-sidebar-active st-menu-layout-topbar');
+                    $('#st-topbar-wand-settings').remove();
                     // 사이드바 제거
                     removeSidebar();
                     // 햄버거 메뉴 생성
                     injectHamburgerMenu();
+                } else if (menuLayout === 'topbar') {
+                    // 기본 상단바 모드 — SillyTavern 네이티브 상태 유지
+                    $('body').addClass('st-menu-layout-topbar');
+                    $('body').removeClass('st-custom-sidebar-active st-menu-layout-hamburger');
+                    // 사이드바/햄버거 모두 제거, 네이티브 복원
+                    restoreButtons();
+                    removeSidebar();
+                    removeHamburgerMenu();
+                    // 핀 고정된 확장 요소 제거 (사이드바/햄버거에만 존재)
+                    $('.st-pinned-extension-item').remove();
+                    // MutationObserver 정리 (topbar에서 drawer 이동 방지)
+                    if (window.stSidebarObserver) {
+                        window.stSidebarObserver.disconnect();
+                        window.stSidebarObserver = null;
+                    }
+                    if (window.stHamburgerObserver) {
+                        window.stHamburgerObserver.disconnect();
+                        window.stHamburgerObserver = null;
+                    }
+                    // topbar에서 요술봉 메뉴에 ST-CustomTheme 설정 항목 추가
+                    if ($('#st-topbar-wand-settings').length === 0) {
+                        const wandItem = $('<div id="st-topbar-wand-settings" class="list-group-item flex-container flexGap5" title="ST-CustomTheme 설정"><div class="fa-solid fa-palette extensionsMenuExtensionButton"></div><span>ST-CustomTheme 설정</span></div>');
+                        wandItem.on('click', function () {
+                            $('#extensionsMenu').hide();
+                            showSettingsPopup();
+                        });
+                        $('#extensionsMenu').append(wandItem);
+                    }
                 } else {
                     // 사이드바 모드 (기존)
                     $('body').addClass('st-custom-sidebar-active');
-                    $('body').removeClass('st-menu-layout-hamburger');
+                    $('body').removeClass('st-menu-layout-hamburger st-menu-layout-topbar');
+                    $('#st-topbar-wand-settings').remove();
                     // 햄버거 메뉴 제거
                     removeHamburgerMenu();
                     // 사이드바 생성 (약간의 딜레이로 iOS 타이밍 이슈 해결)
